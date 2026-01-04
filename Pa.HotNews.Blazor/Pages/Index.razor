@@ -1,7 +1,7 @@
 ﻿@page "/"
 
-@using Pa.HotNews.Blazor.Models
-@inject Pa.HotNews.Blazor.Services.HotNewsApiClient Api
+@using Aneiang.Pa.Core.News.Models
+@inject Pa.HotNews.Blazor.Services.HotNewsLocalClient Api
 @inject Pa.HotNews.Blazor.Services.AppState AppState
 @inject Pa.HotNews.Blazor.Services.LocalStorageService LocalStorage
 @inject Pa.HotNews.Blazor.Services.FavoritesService Favorites
@@ -269,13 +269,14 @@ else
 
                 try
                 {
-                    var payload = await Api.GetNewsRawAsync(key, bustCache: false);
+                    var payload = await Api.GetNewsAsync(key, bustCache: true);
+
                     _blocks[key] = new SourceBlock
                     {
-                        Status = BlockStatus.Success,
-                        Items = payload?.ExtractItems() ?? new List<NewsItem>(),
-                        UpdatedTime = payload?.ExtractUpdatedTime(),
-                        Error = null
+                        Status = payload is { IsSuccessd: true } ? BlockStatus.Success : BlockStatus.Error,
+                        Items = payload?.Data?.ToList() ?? new List<Aneiang.Pa.Core.News.Models.NewsItem>(),
+                        UpdatedTime = payload?.UpdatedTime,
+                        Error = payload is { IsSuccessd: false } ? payload.ErrorMessage : null
                     };
                 }
                 catch (Exception ex)
@@ -283,7 +284,7 @@ else
                     _blocks[key] = new SourceBlock
                     {
                         Status = BlockStatus.Error,
-                        Items = new List<NewsItem>(),
+                        Items = new List<Aneiang.Pa.Core.News.Models.NewsItem>(),
                         UpdatedTime = null,
                         Error = ex.Message
                     };
@@ -313,13 +314,14 @@ else
 
         try
         {
-            var payload = await Api.GetNewsRawAsync(key, bustCache: true);
+            var payload = await Api.GetNewsAsync(key);
+
             _blocks[key] = new SourceBlock
             {
-                Status = BlockStatus.Success,
-                Items = payload?.ExtractItems() ?? new List<NewsItem>(),
-                UpdatedTime = payload?.ExtractUpdatedTime(),
-                Error = null
+                Status = payload is { IsSuccessd: true } ? BlockStatus.Success : BlockStatus.Error,
+                Items = payload?.Data?.ToList() ?? new List<Aneiang.Pa.Core.News.Models.NewsItem>(),
+                UpdatedTime = payload?.UpdatedTime,
+                Error = payload is { IsSuccessd: false } ? payload.ErrorMessage : null
             };
         }
         catch (Exception ex)
@@ -327,7 +329,7 @@ else
             _blocks[key] = new SourceBlock
             {
                 Status = BlockStatus.Error,
-                Items = new List<NewsItem>(),
+                Items = new List<Aneiang.Pa.Core.News.Models.NewsItem>(),
                 UpdatedTime = null,
                 Error = ex.Message
             };

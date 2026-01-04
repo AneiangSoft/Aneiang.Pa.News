@@ -1,3 +1,5 @@
+using Aneiang.Pa.Lottery.Extensions;
+using Aneiang.Pa.News.Extensions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Pa.HotNews.Blazor.Data;
@@ -11,17 +13,18 @@ builder.Services.AddServerSideBlazor();
 // AntDesign.Blazor
 builder.Services.AddAntDesign();
 
-// HttpClient（调用 Pa.HotNews.Api）
-builder.Services.AddHttpClient("HotNewsApi", client =>
-{
-    var baseUrl = builder.Configuration["HotNewsApi:BaseUrl"];
-    if (!string.IsNullOrWhiteSpace(baseUrl))
-    {
-        client.BaseAddress = new Uri(baseUrl);
-    }
-});
+// 启用内存缓存（给 HotNewsLocalClient 用）
+builder.Services.AddMemoryCache();
 
-builder.Services.AddScoped<Pa.HotNews.Blazor.Services.HotNewsApiClient>();
+// 热榜缓存配置
+builder.Services.Configure<Pa.HotNews.Blazor.Services.HotNewsCacheOptions>(
+    builder.Configuration.GetSection(Pa.HotNews.Blazor.Services.HotNewsCacheOptions.SectionName));
+
+// 直接在 Blazor Server 里注册 Aneiang.Pa 的 Scraper（不再通过 HttpClient 调用 Pa.HotNews.Api）
+builder.Services.AddNewsScraper(builder.Configuration);
+builder.Services.AddLotteryScraper();
+
+builder.Services.AddScoped<Pa.HotNews.Blazor.Services.HotNewsLocalClient>();
 builder.Services.AddScoped<Pa.HotNews.Blazor.Services.LocalStorageService>();
 
 // 全局 UI 状态 / 收藏 / 来源管理
