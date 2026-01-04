@@ -1,6 +1,5 @@
 # Pa.HotNews（热点聚合）
 
-[![CI](https://img.shields.io/github/actions/workflow/status/AneiangSoft/Aneiang.Pa.News/ci.yml?branch=master)](../../actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
 一个简单的“热点/热搜聚合”示例项目：后端基于 ASP.NET Core 提供聚合抓取接口，前端基于 React + Vite 展示与分享热点内容，并提供 Docker Compose 一键启动。
@@ -44,19 +43,12 @@
 
 ## 截图
 
-> 说明：截图较多时建议折叠，避免 README 首屏过长。
-
-<details>
-<summary>点击展开 / 收起截图</summary>
-
 | 预览 |
 | --- |
 | ![ScreenShot_2026-01-04_114410_940](./docments/ScreenShot_2026-01-04_114410_940.png) |
 | ![ScreenShot_2026-01-04_120819_009](./docments/ScreenShot_2026-01-04_120819_009.png) |
 | ![ScreenShot_2026-01-04_120855_967](./docments/ScreenShot_2026-01-04_120855_967.png) |
 | ![ScreenShot_2026-01-04_120913_719](./docments/ScreenShot_2026-01-04_120913_719.png) |
-
-</details>
 
 ---
 
