@@ -27,12 +27,20 @@ export const getSources = async () => {
  * @param {string} source - The news source (e.g., 'BaiDu', 'ZhiHu').
  * @returns {Promise<object>}
  */
-export const getNews = async (source) => {
+export const getNews = async (source, { bustCache = false } = {}) => {
     if (!source) {
         return Promise.resolve({ data: [] }); // Return empty data if source is not selected
     }
     try {
-        const response = await apiClient.get(`/${source.toLowerCase()}`);
+        const url = `/${source.toLowerCase()}`;
+        const params = {};
+        if (bustCache) {
+            // 精确到分钟的版本号：YYYYMMDDHHmm
+            const d = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            params.v = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}`;
+        }
+        const response = await apiClient.get(url, { params });
         return response.data;
     } catch (error) {
         console.error(`Error fetching news for ${source}:`, error);

@@ -201,7 +201,7 @@ function App() {
     }));
 
     try {
-      const payload = await getNews(key);
+      const payload = await getNews(key, { bustCache: true });
       const list = Array.isArray(payload?.data) ? payload.data : payload?.data?.items || [];
       const updatedTime = payload?.updatedTime ?? payload?.data?.updatedTime ?? payload?.data?.updateTime;
 
@@ -628,9 +628,6 @@ function App() {
               />
             </Tooltip>
 
-            <Tooltip title="刷新">
-              <Button icon={<SyncOutlined />} onClick={fetchAllNews} loading={isFirstLoading} />
-            </Tooltip>
 
             <Tooltip title="复制当前筛选链接">
               <Button type="default" icon={<CopyOutlined />} onClick={copyFilterLink} />
@@ -702,13 +699,6 @@ function App() {
                     onClick: () => setTheme('warm'),
                   },
                   { type: 'divider' },
-                  {
-                    key: 'refresh',
-                    label: '刷新',
-                    icon: <SyncOutlined />,
-                    onClick: fetchAllNews,
-                    disabled: isFirstLoading,
-                  },
                   {
                     key: 'copy-filter-link',
                     label: '复制筛选链接',
@@ -976,6 +966,34 @@ function App() {
       >
         <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 10 }}>
           勾选显示/隐藏来源；使用上下箭头调整卡片顺序。
+        </div>
+
+        <div style={{ marginBottom: 10 }}>
+          <Checkbox
+            indeterminate={
+              (sourceCfg.order || []).length
+                ? sourceCfg.hidden.length > 0 && sourceCfg.hidden.length < (sourceCfg.order || []).length
+                : sourceCfg.hidden.length > 0 && sourceCfg.hidden.length < allSources.length
+            }
+            checked={
+              (sourceCfg.order || []).length
+                ? sourceCfg.hidden.length === 0
+                : sourceCfg.hidden.length === 0
+            }
+            onChange={e => {
+              const checked = e.target.checked;
+              if (checked) {
+                // 全选：清空 hidden
+                setSourceCfg(prev => ({ ...prev, hidden: [] }));
+              } else {
+                // 取消全选：全部隐藏
+                const list = (sourceCfg.order || []).length ? sourceCfg.order : allSources;
+                setSourceCfg(prev => ({ ...prev, hidden: list.map(s => String(s).toLowerCase()) }));
+              }
+            }}
+          >
+            全选
+          </Checkbox>
         </div>
 
         <List
