@@ -2,7 +2,6 @@ using Aneiang.Pa.Lottery.Extensions;
 using Aneiang.Pa.News.Extensions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Pa.HotNews.Blazor.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,8 +32,6 @@ builder.Services.AddScoped<Pa.HotNews.Blazor.Services.FavoritesService>();
 builder.Services.AddScoped<Pa.HotNews.Blazor.Services.SourceConfigService>();
 builder.Services.AddSingleton<Pa.HotNews.Blazor.Services.SourceNameService>();
 
-// TODO: 后续会替换掉模板服务
-builder.Services.AddSingleton<WeatherForecastService>();
 
 var app = builder.Build();
 
