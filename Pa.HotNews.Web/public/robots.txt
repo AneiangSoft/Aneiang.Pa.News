@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://news.aneiang.com/sitemap.xml
+

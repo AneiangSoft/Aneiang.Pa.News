@@ -1,0 +1,5 @@
+OG image 建议：放一张 1200x630 的图片到 public/og.png
+然后在 index.html 里加：
+<meta property="og:image" content="https://news.aneiang.com/og.png" />
+<meta property="twitter:image" content="https://news.aneiang.com/og.png" />
+

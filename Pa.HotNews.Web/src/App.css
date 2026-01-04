@@ -1,0 +1,739 @@
+/* ========== Base Styles ========== */
+:root {
+  /* 默认（深色）主题 */
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+
+  --bg-primary: #0b1220;
+  --bg-secondary: #0f1b2d;
+
+  /* 更柔和的文本色，降低刺眼 */
+  --text-primary: rgba(248, 250, 252, 0.92);
+  --text-secondary: rgba(148, 163, 184, 0.88);
+
+  --card-bg: rgba(15, 23, 42, 0.72);
+  --card-border: rgba(148, 163, 184, 0.12);
+  --card-hover: rgba(56, 189, 248, 0.10);
+}
+
+/* 浅色主题 */
+:root[data-theme="light"] {
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+
+  --bg-primary: #f6f7fb;
+  --bg-secondary: #ffffff;
+
+  --text-primary: rgba(15, 23, 42, 0.92);
+  --text-secondary: rgba(71, 85, 105, 0.88);
+
+  --card-bg: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(15, 23, 42, 0.10);
+  --card-hover: rgba(37, 99, 235, 0.08);
+}
+
+/* 护眼暖色主题（低蓝光倾向） */
+:root[data-theme="warm"] {
+  --primary: #d97706;
+  --primary-hover: #b45309;
+
+  --bg-primary: #12110f;
+  --bg-secondary: #181613;
+
+  --text-primary: rgba(255, 252, 245, 0.92);
+  --text-secondary: rgba(203, 193, 176, 0.90);
+
+  --card-bg: rgba(24, 22, 19, 0.78);
+  --card-border: rgba(203, 193, 176, 0.14);
+  --card-hover: rgba(217, 119, 6, 0.10);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  color: var(--text-primary);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========== Layout ========== */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========== Header ========== */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0 2rem;
+  height: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  /* 让导航栏随主题变化（避免浅色/护眼时看不清） */
+  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  border-bottom: 1px solid color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.logo h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+
+  /* 默认用主题色渐变；浅色主题下改为纯色以保证对比度 */
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 70%, #ffffff), var(--primary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.5px;
+}
+
+:root[data-theme="light"] .logo h1 {
+  background: none;
+  color: var(--text-primary);
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* 顶部图标按钮更紧凑 */
+.actions .ant-btn {
+  padding: 0 0.75rem;
+}
+
+/* Badge 包裹按钮时避免撑开 */
+.actions .ant-badge {
+  line-height: 1;
+}
+
+.search-input {
+  width: min(320px, 52vw);
+}
+
+/* 移动端：导航栏两行布局 + 右侧操作区不换行/可横向滚动 */
+@media (max-width: 768px) {
+  .app-header {
+    height: auto;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .logo-img {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* 移动端：搜索 + 右侧菜单按钮 */
+  .actions.mobile-actions {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+  }
+
+  .actions.mobile-actions .search-input {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+
+  .actions.mobile-actions .ant-btn {
+    flex: 0 0 auto;
+  }
+}
+
+/* 主题切换 Segmented 的适配（让它在深色/暖色下也清晰） */
+.actions .ant-segmented {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.20);
+}
+
+:root[data-theme="light"] .actions .ant-segmented {
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.actions .ant-segmented-item {
+  color: var(--text-secondary);
+}
+
+.actions .ant-segmented-item-selected {
+  /* 选中项走主题色，更清晰 */
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* AntD Segmented 的选中背景（thumb）在深色/暖色下默认偏暗，这里显式提高对比度 */
+.actions .ant-segmented-thumb {
+  background: color-mix(in srgb, var(--bg-secondary) 55%, var(--primary) 45%);
+}
+
+:root[data-theme="light"] .actions .ant-segmented-thumb {
+  background: color-mix(in srgb, #ffffff 70%, var(--primary) 30%);
+}
+
+/* ========== Main Content ========== */
+.app-main {
+  flex: 1;
+  padding: 1.5rem;
+  max-width: 100%;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ========== Grid Layout ========== */
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* ========== Card Styles ========== */
+.source-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.source-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.source-card .ant-card-head {
+  border-bottom: 1px solid var(--card-border);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0 1.25rem;
+  min-height: 3.5rem;
+}
+
+/* 标题文字始终显示为浅色（避免渐变背景后看不清） */
+.source-card .ant-card-head-title {
+  padding: 1rem 0;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 强制 Card 标题/extra 跟随主题色（避免 antd 默认样式导致深色下标题变黑） */
+.source-card .ant-card-head-title,
+.source-card .ant-card-head-title > span,
+.source-card .ant-card-extra {
+  color: var(--text-primary) !important;
+}
+
+/* Card 右上角数量提示（仅搜索时显示） */
+.card-extra {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.card-updated {
+  font-size: 0.75rem;
+  color: var(--text-secondary) !important;
+}
+
+.card-extra-count {
+  font-size: 0.8125rem;
+  color: var(--text-secondary) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-error-label {
+  font-size: 0.75rem;
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.card-state-body {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+}
+
+.card-error-text {
+  color: color-mix(in srgb, #ef4444 70%, var(--text-secondary));
+  font-size: 12px;
+  text-align: center;
+  word-break: break-word;
+}
+
+.card-error-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-error-img {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  opacity: 0.95;
+
+  /* 让 svg 跟随 currentColor */
+  color: color-mix(in srgb, #ef4444 78%, var(--text-secondary));
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.15));
+}
+
+.card-error-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.card-error-actions .ant-btn {
+  height: 32px;
+  padding: 0 12px;
+}
+
+.card-error-hint {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* 卡片右上角的小按钮（复制快照等） */
+.card-action-btn {
+  color: var(--text-secondary) !important;
+  padding: 0 6px !important;
+}
+
+.card-action-btn:hover {
+  color: var(--primary) !important;
+}
+
+.source-card .ant-card-body {
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ========== News List ========== */
+.news-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 420px;
+  padding: 0.5rem 0;
+}
+
+.news-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.news-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.news-list::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+.news-list .ant-list-item {
+  padding: 0.5rem 1.25rem;
+  margin: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  transition: background-color 0.2s ease;
+
+  display: flex;
+  align-items: center; /* 水平行内元素垂直居中对齐 */
+  text-align: left;
+  gap: 0.5rem;
+}
+
+/* 右侧收藏按钮 */
+.fav-btn {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  margin-left: 0.25rem;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.fav-btn:hover {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  color: var(--primary);
+}
+
+.fav-btn.is-fav {
+  color: var(--primary);
+}
+
+/* Drawer 内的 list 复用已读样式 */
+.ant-drawer .ant-list-item a {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 收藏抽屉顶部工具区 */
+.fav-tools .ant-input,
+.fav-tools .ant-select-selector {
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent) !important;
+  border-color: color-mix(in srgb, var(--text-secondary) 22%, transparent) !important;
+  color: var(--text-primary) !important;
+}
+
+.fav-tools .ant-select-arrow {
+  color: var(--text-secondary);
+}
+
+.news-list .ant-list-item:last-child {
+  border-bottom: none;
+}
+
+.news-list .ant-list-item:hover {
+  background-color: var(--card-hover);
+}
+
+.news-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.news-list a {
+  flex: 1;
+  min-width: 0; /* 允许 flex item 收缩 */
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  transition: color 0.2s ease;
+  
+  /* 强制单行显示 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.news-list a:hover {
+  color: var(--primary);
+}
+
+/* 已读样式：降低存在感，方便扫榜 */
+.news-list a.is-read {
+  color: var(--text-secondary);
+  opacity: 0.72;
+}
+
+.news-list a.is-read:hover {
+  opacity: 1;
+  color: var(--primary);
+}
+
+/* 关键词高亮（用于搜索命中） */
+.hl {
+  background: color-mix(in srgb, var(--primary) 28%, transparent);
+  color: var(--text-primary);
+  padding: 0 2px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+:root[data-theme="light"] .hl {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--text-primary);
+}
+
+/* ========== Buttons ========== */
+.ant-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.ant-btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.ant-btn-primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.ant-btn-default {
+  background: color-mix(in srgb, var(--bg-secondary) 65%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  color: var(--text-primary);
+}
+
+.ant-btn-default:hover {
+  background: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+  border-color: color-mix(in srgb, var(--text-secondary) 35%, transparent);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+/* ========== Loading State ========== */
+.spin-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+/* ========== Footer ========== */
+.app-footer {
+  padding: 18px 16px;
+  border-top: 1px solid color-mix(in srgb, var(--text-secondary) 18%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.footer-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.footer-inner a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.footer-inner a:hover {
+  color: var(--primary);
+}
+
+.footer-sep {
+  opacity: 0.7;
+}
+
+/* 51LA 挂件容器：避免脚本把 footer 撑得太高 */
+.footer-51la {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+/* ========== Floating Back To Top ========== */
+.back-top-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%; /* 改为圆形 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary); /* 使用主题色 */
+  color: white; /* 图标改为白色 */
+  border: none;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  transition: all 0.2s ease-in-out;
+}
+
+.back-top-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5);
+}
+
+.back-top-btn:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.back-top-btn .anticon {
+  font-size: 18px;
+}
+
+/* ========== Responsive Adjustments ========== */
+@media (max-width: 768px) {
+  /* app-header 的移动端布局在上面已经做了更完整的定义，这里只保留必要的其它样式 */
+
+  .app-main {
+    padding: 1rem;
+  }
+
+  .news-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .logo h1 {
+    font-size: 1.25rem;
+  }
+}
+
+/* ========== Animations ========== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.source-card {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* ========== Source Specific Colors (lowercase, brighter) ========== */
+/* 重要：App.jsx 已把 data-source 统一为小写 */
+.source-card[data-source="zhihu"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(0, 132, 255, 0.70), rgba(0, 161, 255, 0.40));
+}
+
+.source-card[data-source="weibo"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(255, 130, 0, 0.72), rgba(255, 157, 0, 0.44));
+}
+
+.source-card[data-source="baidu"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(41, 50, 225, 0.70), rgba(74, 84, 232, 0.42));
+}
+
+.source-card[data-source="douyin"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.68), rgba(51, 51, 51, 0.38));
+}
+
+.source-card[data-source="bilibili"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(251, 114, 153, 0.70), rgba(255, 133, 173, 0.42));
+}
+
+.source-card[data-source="hupu"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(229, 57, 53, 0.70), rgba(244, 67, 54, 0.40));
+}
+
+.source-card[data-source="tencent"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.66), rgba(14, 165, 233, 0.36));
+}
+
+.source-card[data-source="juejin"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(22, 163, 74, 0.45), rgba(56, 189, 248, 0.26));
+}
+
+.source-card[data-source="thepaper"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(167, 139, 250, 0.50), rgba(99, 102, 241, 0.28));
+}
+
+.source-card[data-source="douban"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.45), rgba(16, 185, 129, 0.26));
+}
+
+.source-card[data-source="ifeng"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.46), rgba(249, 115, 22, 0.26));
+}
+
+.source-card[data-source="cnblog"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.36), rgba(71, 85, 105, 0.22));
+}
+
+.source-card[data-source="csdn"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.50), rgba(244, 63, 94, 0.28));
+}
+
+.source-card[data-source="github"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(36, 41, 46, 0.62), rgba(47, 54, 61, 0.30));
+}
+
+.source-card[data-source="v2ex"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(30, 136, 229, 0.48), rgba(66, 165, 245, 0.26));
+}
+
+.source-card[data-source="tieba"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(30, 136, 229, 0.48), rgba(33, 150, 243, 0.26));
+}
+
+.source-card[data-source="36kr"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(0, 188, 212, 0.45), rgba(0, 172, 193, 0.26));
+}
+
+.source-card[data-source="toutiao"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(255, 77, 79, 0.48), rgba(255, 120, 117, 0.26));
+}

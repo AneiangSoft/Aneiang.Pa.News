@@ -1,0 +1,95 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+    'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* 背景颜色交由 App.css 的主题变量控制，这里仅保底 */
+  background: var(--bg-primary, #0f172a);
+  color: var(--text-primary, #e2e8f0);
+}
+
+/*
+  解决移动端（尤其 iOS Safari）滚动背景“断层/闪烁”的稳妥方案：
+  不再依赖 background-attachment: fixed，而是用 fixed 的伪元素当作背景层。
+*/
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+
+  background: linear-gradient(135deg, var(--bg-primary, #0b1220) 0%, var(--bg-secondary, #0f1b2d) 100%);
+  background-repeat: no-repeat;
+  background-size: cover;
+
+  /* 避免某些 GPU 合成导致的缝隙 */
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* 根节点铺满，避免露底 */
+#root {
+  min-height: 100vh;
+}
+
+/* iOS 滚动优化（可选，但一般更顺滑） */
+body {
+  min-height: 100vh;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 添加一些微妙的粒子效果（单独一层，避免与背景渐变互相影响） */
+html::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.08;
+  z-index: -1;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(24, 144, 255, 0.2) 0%, transparent 20%),
+    radial-gradient(circle at 80% 70%, rgba(45, 212, 191, 0.2) 0%, transparent 20%),
+    radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.2) 0%, transparent 30%);
+  animation: pulse 28s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.06; }
+  100% { opacity: 0.16; }
+}
+
+/* 减少动态效果：遵从系统设置，降低眼疲劳与省电 */
+@media (prefers-reduced-motion: reduce) {
+  html::before {
+    animation: none;
+    opacity: 0.06;
+  }
+
+  * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* 移动端进一步降低背景动效强度 */
+@media (max-width: 768px) {
+  html::before {
+    opacity: 0.05;
+  }
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  color: #7dd3fc;
+}
