@@ -34,7 +34,7 @@ builder.Services.AddScraperController(options =>
     options.RoutePrefix = "api/scraper"; // Set a specific route prefix for news
     options.UseLowercaseInRoute = true;
     options.EnableResponseCaching = true;     // Enable response caching for performance
-    options.CacheDurationSeconds = 900;       // Cache responses for 15 minutes
+    options.CacheDurationSeconds = 3600;       // Cache responses for 15 minutes
 });
 
 var app = builder.Build();
