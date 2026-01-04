@@ -1,7 +1,4 @@
-using Aneiang.Pa.Lottery.Extensions;
 using Aneiang.Pa.News.Extensions;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +18,6 @@ builder.Services.Configure<Pa.HotNews.Blazor.Services.HotNewsCacheOptions>(
 
 // 直接在 Blazor Server 里注册 Aneiang.Pa 的 Scraper（不再通过 HttpClient 调用 Pa.HotNews.Api）
 builder.Services.AddNewsScraper(builder.Configuration);
-builder.Services.AddLotteryScraper();
 
 builder.Services.AddScoped<Pa.HotNews.Blazor.Services.HotNewsLocalClient>();
 builder.Services.AddScoped<Pa.HotNews.Blazor.Services.LocalStorageService>();

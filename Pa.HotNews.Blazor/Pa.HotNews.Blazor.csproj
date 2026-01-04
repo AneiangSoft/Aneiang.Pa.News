@@ -9,9 +9,6 @@
   <ItemGroup>
     <PackageReference Include="Aneiang.Pa.News" Version="2.1.2" />
     <PackageReference Include="AntDesign" Version="1.5.1" />
-    
-    <!-- 让 Blazor Server 直接复用 Pa.HotNews.Api 内使用的 Scraper 逻辑（不再走 HTTP） -->
-    <PackageReference Include="Aneiang.Pa.AspNetCore" Version="2.1.2" />
   </ItemGroup>
 
 </Project>
