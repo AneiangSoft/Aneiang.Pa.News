@@ -1,0 +1,365 @@
+﻿@page "/"
+
+@using Pa.HotNews.Blazor.Models
+@inject Pa.HotNews.Blazor.Services.HotNewsApiClient Api
+@inject Pa.HotNews.Blazor.Services.AppState AppState
+@inject Pa.HotNews.Blazor.Services.LocalStorageService LocalStorage
+@inject Pa.HotNews.Blazor.Services.FavoritesService Favorites
+@inject Pa.HotNews.Blazor.Services.SourceConfigService SourceCfg
+@inject Pa.HotNews.Blazor.Services.SourceNameService SourceNames
+@inject AntDesign.MessageService Message
+
+<PageTitle>热榜聚合（Blazor）</PageTitle>
+
+@if (_loading && _blocks.Count == 0)
+{
+    <Spin Tip="加载中..." />
+}
+else
+{
+    <div class="news-grid">
+        @foreach (var src in GetDisplaySources())
+        {
+            var block = _blocks.GetValueOrDefault(src);
+            if (block is null) continue;
+
+            var srcLower = (src ?? string.Empty).Trim().ToLowerInvariant();
+
+            var items = block.Items;
+
+            if (!string.IsNullOrWhiteSpace(AppState.Query) && block.Status == BlockStatus.Success)
+            {
+                var q = AppState.Query.Trim();
+                items = items
+                    .Where(x => (x.Title ?? string.Empty).Contains(q, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                if (items.Count == 0)
+                    continue;
+            }
+
+            <SourceCard Title="@SourceNames.ToDisplayName(srcLower)" DataSource="@srcLower"
+                        Extra="@RenderCardExtra(block)">
+
+                @if (block.Status == BlockStatus.Error)
+                {
+                    <div class="card-state-body">
+                        <div class="card-error-visual" aria-hidden="true">
+                            <img class="card-error-img" src="/error.svg" alt="" />
+                        </div>
+                        <div class="card-error-text">加载失败</div>
+                        <div class="card-error-actions">
+                            <button type="button" @onclick="() => Retry(src ?? string.Empty)">重试该来源</button>
+                        </div>
+                        <div class="card-error-hint">提示：可能是接口限流/网络波动，稍等片刻再试。</div>
+                    </div>
+                }
+                else if (block.Status == BlockStatus.Loading)
+                {
+                    <div class="card-state-body">
+                        <Spin Tip="加载中..." />
+                    </div>
+                }
+                else if (items is null || items.Count == 0)
+                {
+                    <div class="card-state-body">
+                        <Empty />
+                    </div>
+                }
+                else
+                {
+                    <div class="news-list">
+                        @for (var i = 0; i < items.Count; i++)
+                        {
+                            var it = items[i];
+                            var url = it.Url ?? string.Empty;
+                            var isRead = _readSet.Contains(url);
+                            var isFav = Favorites.IsFavorited(url);
+
+                            <div class="news-item">
+                                <span class="news-rank">@(i + 1)</span>
+
+                                <a href="@it.Url" target="_blank" rel="noopener noreferrer"
+                                   class="@(isRead ? "is-read" : string.Empty)"
+                                   @onclick="async (_) => await MarkAsReadAsync(it.Url)">@it.Title</a>
+
+                                <button type="button"
+                                        class="@(isFav ? "fav-btn is-fav" : "fav-btn")"
+                                        title="@(isFav ? "取消收藏" : "收藏")"
+                                        @onclick="async () => await ToggleFavoriteAsync(it, srcLower)" @onclick:stopPropagation>
+                                    @(isFav ? "★" : "☆")
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+            </SourceCard>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(AppState.Query) && _blocks.Values.Any(b => b.Status == BlockStatus.Success) && !AnyMatch())
+    {
+        <div style="padding: 48px 0;">
+            <Empty />
+        </div>
+    }
+}
+
+<FavoritesDrawer Visible="@_favOpen" VisibleChanged="@((bool v) => _favOpen = v)" />
+<SourceManagerDrawer Visible="@_srcMgrOpen" VisibleChanged="@((bool v) => _srcMgrOpen = v)" AllSources="@_blocks.Keys" />
+
+@implements IDisposable
+
+@code {
+    private const string READ_KEY = "readNewsUrls";
+    private HashSet<string> _readSet = new(StringComparer.OrdinalIgnoreCase);
+
+    private bool _loading;
+
+    private bool _favOpen;
+    private bool _srcMgrOpen;
+
+    private readonly Dictionary<string, SourceBlock> _blocks = new(StringComparer.OrdinalIgnoreCase);
+
+    protected override void OnInitialized()
+    {
+        AppState.Changed += StateHasChanged;
+        Favorites.Changed += StateHasChanged;
+        SourceCfg.Changed += StateHasChanged;
+
+        AppState.ShowFavoritesRequested += HandleShowFavorites;
+        AppState.ShowSourceManagerRequested += HandleShowSourceManager;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAll();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // 已读列表（localStorage）
+        try
+        {
+            var list = await LocalStorage.GetJsonAsync<List<string>>(READ_KEY) ?? new List<string>();
+            _readSet = new HashSet<string>(list.Where(x => !string.IsNullOrWhiteSpace(x)), StringComparer.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            // ignore
+        }
+
+        // 来源配置（localStorage）
+        try
+        {
+            await SourceCfg.InitializeAsync(_blocks.Keys);
+        }
+        catch
+        {
+            // ignore
+        }
+
+        StateHasChanged();
+    }
+
+    private void HandleShowFavorites()
+    {
+        _favOpen = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleShowSourceManager()
+    {
+        _srcMgrOpen = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private IEnumerable<string> GetDisplaySources()
+    {
+        var all = _blocks.Keys.Select(s => (s ?? string.Empty).Trim().ToLowerInvariant()).Where(s => s.Length > 0);
+        return SourceCfg.GetDisplaySources(all);
+    }
+
+    private async Task ToggleFavoriteAsync(NewsItem it, string srcLower)
+    {
+        await Favorites.ToggleAsync(it.Url, it.Title, srcLower);
+    }
+
+    private async Task MarkAsReadAsync(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return;
+        if (_readSet.Contains(url)) return;
+
+        _readSet.Add(url);
+
+        try
+        {
+            await LocalStorage.SetJsonAsync(READ_KEY, _readSet.ToList());
+        }
+        catch
+        {
+            // ignore
+        }
+
+        StateHasChanged();
+    }
+
+    private string FormatTime(DateTimeOffset? time)
+    {
+        if (!time.HasValue) return string.Empty;
+
+        var span = DateTimeOffset.UtcNow - time.Value;
+
+        if (span.TotalMinutes < 1) return "刚刚";
+        if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes}分钟前";
+        if (span.TotalHours < 24) return $"{(int)span.TotalHours}小时前";
+        return $"{(int)span.TotalDays}天前";
+    }
+
+    private RenderFragment RenderCardExtra(SourceBlock block) => builder =>
+    {
+        if (block.Status == BlockStatus.Error)
+        {
+            builder.OpenElement(0, "span");
+            builder.AddAttribute(1, "class", "card-error-label");
+            builder.AddContent(2, "加载失败");
+            builder.CloseElement();
+        }
+        else if (block.UpdatedTime.HasValue)
+        {
+            builder.OpenElement(0, "span");
+            builder.AddAttribute(1, "class", "card-updated");
+            builder.AddAttribute(2, "title", block.UpdatedTime.Value.ToString("yyyy-MM-dd HH:mm:ss"));
+            builder.AddContent(3, FormatTime(block.UpdatedTime));
+            builder.CloseElement();
+        }
+    };
+
+    public void Dispose()
+    {
+        AppState.Changed -= StateHasChanged;
+        Favorites.Changed -= StateHasChanged;
+        SourceCfg.Changed -= StateHasChanged;
+
+        AppState.ShowFavoritesRequested -= HandleShowFavorites;
+        AppState.ShowSourceManagerRequested -= HandleShowSourceManager;
+    }
+
+    private async Task ReloadAll()
+    {
+        if (_loading) return;
+        _loading = true;
+
+        try
+        {
+            var sources = await Api.GetSourcesAsync();
+
+            _blocks.Clear();
+            foreach (var s in sources.Select(x => (x ?? string.Empty).Trim()).Where(x => x.Length > 0))
+                _blocks[s.ToLowerInvariant()] = new SourceBlock { Status = BlockStatus.Loading };
+
+            StateHasChanged();
+
+            var tasks = sources.Select(async s =>
+            {
+                var key = (s ?? string.Empty).Trim().ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(key)) return;
+
+                try
+                {
+                    var payload = await Api.GetNewsRawAsync(key, bustCache: false);
+                    _blocks[key] = new SourceBlock
+                    {
+                        Status = BlockStatus.Success,
+                        Items = payload?.ExtractItems() ?? new List<NewsItem>(),
+                        UpdatedTime = payload?.ExtractUpdatedTime(),
+                        Error = null
+                    };
+                }
+                catch (Exception ex)
+                {
+                    _blocks[key] = new SourceBlock
+                    {
+                        Status = BlockStatus.Error,
+                        Items = new List<NewsItem>(),
+                        UpdatedTime = null,
+                        Error = ex.Message
+                    };
+                }
+            });
+
+            await Task.WhenAll(tasks);
+        }
+        catch (Exception ex)
+        {
+            Message.Error($"获取来源失败：{ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Retry(string source)
+    {
+        var key = (source ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(key)) return;
+
+        _blocks[key] = new SourceBlock { Status = BlockStatus.Loading };
+        StateHasChanged();
+
+        try
+        {
+            var payload = await Api.GetNewsRawAsync(key, bustCache: true);
+            _blocks[key] = new SourceBlock
+            {
+                Status = BlockStatus.Success,
+                Items = payload?.ExtractItems() ?? new List<NewsItem>(),
+                UpdatedTime = payload?.ExtractUpdatedTime(),
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _blocks[key] = new SourceBlock
+            {
+                Status = BlockStatus.Error,
+                Items = new List<NewsItem>(),
+                UpdatedTime = null,
+                Error = ex.Message
+            };
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private bool AnyMatch()
+    {
+        var q = AppState.Query.Trim();
+        if (q.Length == 0) return true;
+
+        foreach (var b in _blocks.Values)
+        {
+            if (b.Status != BlockStatus.Success) continue;
+            if (b.Items.Any(x => (x.Title ?? string.Empty).Contains(q, StringComparison.OrdinalIgnoreCase)))
+                return true;
+        }
+
+        return false;
+    }
+
+    private enum BlockStatus { Loading, Success, Error }
+
+    private sealed class SourceBlock
+    {
+        public BlockStatus Status { get; set; }
+        public List<NewsItem> Items { get; set; } = new();
+        public DateTimeOffset? UpdatedTime { get; set; }
+        public string? Error { get; set; }
+    }
+}

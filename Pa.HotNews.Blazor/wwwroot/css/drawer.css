@@ -1,0 +1,56 @@
+.hotnews-drawer-mask{
+  position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:999;
+}
+
+.hotnews-drawer{
+  position:fixed; top:0; right:0; height:100vh; width:420px; max-width:92vw;
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-left: 1px solid color-mix(in srgb, var(--text-secondary) 18%, transparent);
+  z-index:1000;
+  display:flex; flex-direction:column;
+}
+
+.hotnews-drawer-header{
+  height:56px;
+  display:flex; align-items:center;
+  padding:0 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-secondary) 18%, transparent);
+}
+
+.hotnews-drawer-title{ font-weight:700; color: var(--text-primary); }
+
+.hotnews-drawer-close{
+  border:none; background:transparent; color: var(--text-secondary);
+  font-size:22px; line-height:1; padding:4px 8px; cursor:pointer;
+}
+
+.hotnews-drawer-close:hover{ color: var(--text-primary); }
+
+.hotnews-drawer-body{
+  padding: 16px;
+  overflow:auto;
+}
+
+/* 让 Drawer 内的 input/select/button 跟 Header 风格一致（避免 Bootstrap 污染） */
+.hotnews-drawer input,
+.hotnews-drawer select,
+.hotnews-drawer button{
+  background: color-mix(in srgb, var(--bg-secondary) 65%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  color: var(--text-primary);
+  border-radius: 0.5rem;
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.hotnews-drawer button{ cursor:pointer; }
+
+.hotnews-drawer button:hover{
+  background: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+  border-color: color-mix(in srgb, var(--text-secondary) 35%, transparent);
+}
+
+.hotnews-drawer button:disabled{ opacity: .55; cursor:not-allowed; }

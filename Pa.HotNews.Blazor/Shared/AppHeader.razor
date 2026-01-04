@@ -1,0 +1,84 @@
+@implements IDisposable
+
+@inject Pa.HotNews.Blazor.Services.AppState AppState
+@inject Pa.HotNews.Blazor.Services.LocalStorageService LocalStorage
+@inject Pa.HotNews.Blazor.Services.FavoritesService Favorites
+@inject IJSRuntime JS
+
+<header class="app-header">
+    <div class="logo">
+        <h1 style="margin:0">热榜聚合</h1>
+    </div>
+
+    <div class="actions">
+        <input class="search-input"
+               placeholder="搜索所有热榜标题..."
+               value="@AppState.Query"
+               @oninput="(e) => AppState.SetQuery(e.Value?.ToString())" />
+
+        <div class="theme-segment" role="group" aria-label="主题切换">
+            <button type="button" class='theme-seg-btn @(AppState.Theme == "dark" ? "is-active" : "")' @onclick='async () => await SetTheme("dark")'>深色</button>
+            <button type="button" class='theme-seg-btn @(AppState.Theme == "light" ? "is-active" : "")' @onclick='async () => await SetTheme("light")'>浅色</button>
+            <button type="button" class='theme-seg-btn @(AppState.Theme == "warm" ? "is-active" : "")' @onclick='async () => await SetTheme("warm")'>护眼</button>
+        </div>
+
+        <button class="icon-btn" type="button" title="来源管理" @onclick="() => AppState.RequestShowSourceManager()">
+            <span class="icon">
+                <svg viewBox="64 64 896 896" focusable="false" data-icon="setting" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M924.8 625.7l-65.5-56c3.1-19 4.7-38.4 4.7-57.8s-1.6-38.8-4.7-57.8l65.5-56a32.03 32.03 0 009.3-36.4l-34.2-59.3a32.03 32.03 0 00-36.4-9.3L788 346.3a340.39 340.39 0 00-50.2-28.4l-14.6-79.1a32.03 32.03 0 00-30.6-22.8H633.2a32.03 32.03 0 00-30.6 22.8L588 317.9a338.55 338.55 0 00-50.2 28.4l-70.2-41.2a32.03 32.03 0 00-36.4 9.3L397 373.7a32.03 32.03 0 009.3 36.4l65.5 56c-3.1 19-4.7 38.4-4.7 57.8s1.6 38.8 4.7 57.8l-65.5 56a32.03 32.03 0 00-9.3 36.4l34.2 59.3a32.03 32.03 0 0036.4 9.3l70.2-41.2c15.9 11.1 32.8 21.2 50.2 28.4l14.6 79.1a32.03 32.03 0 0030.6 22.8h59.3a32.03 32.03 0 0030.6-22.8l14.6-79.1c17.4-7.2 34.3-17.3 50.2-28.4l70.2 41.2a32.03 32.03 0 0036.4-9.3l34.2-59.3a32.03 32.03 0 00-9.3-36.4zM512 640c-70.7 0-128-57.3-128-128s57.3-128 128-128 128 57.3 128 128-57.3 128-128 128z"></path></svg>
+            </span>
+        </button>
+
+        <button class="icon-btn" type="button" title="收藏" @onclick="() => AppState.RequestShowFavorites()">
+            <span class="icon">
+                <svg viewBox="64 64 896 896" focusable="false" data-icon="book" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M832 64H192c-17.7 0-32 14.3-32 32v832c0 17.7 14.3 32 32 32h640c17.7 0 32-14.3 32-32V96c0-17.7-14.3-32-32-32zm-260 72h96v209.9L621.5 312 572 345.9V136zm220 752H232V136h280v296.9l112-77.4 112 77.4V136h64v752z"></path></svg>
+            </span>
+            @if (Favorites.Count > 0)
+            {
+                <span class="badge">@Favorites.Count</span>
+            }
+        </button>
+    </div>
+</header>
+
+@code {
+    private const string THEME_KEY = "theme";
+    private bool _clientReady;
+
+    protected override void OnInitialized()
+    {
+        AppState.Changed += StateHasChanged;
+        Favorites.Changed += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _clientReady = true;
+
+        // 主题
+        var saved = await LocalStorage.GetStringAsync(THEME_KEY);
+        AppState.SetTheme(saved);
+        await JS.InvokeVoidAsync("hotnewsTheme.set", AppState.Theme);
+
+        // 收藏初始化（localStorage）
+        await Favorites.InitializeAsync();
+
+        StateHasChanged();
+    }
+
+    private async Task SetTheme(string theme)
+    {
+        AppState.SetTheme(theme);
+
+        if (!_clientReady) return;
+
+        await JS.InvokeVoidAsync("hotnewsTheme.set", AppState.Theme);
+        await LocalStorage.SetStringAsync(THEME_KEY, AppState.Theme);
+    }
+
+    public void Dispose()
+    {
+        AppState.Changed -= StateHasChanged;
+        Favorites.Changed -= StateHasChanged;
+    }
+}

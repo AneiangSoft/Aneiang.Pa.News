@@ -1,0 +1,14 @@
+@using AntDesign
+
+<div class="source-card-wrap" data-source="@DataSource">
+    <Card Title="@Title" Extra="@Extra" Class="source-card">
+        @ChildContent
+    </Card>
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? DataSource { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Extra { get; set; }
+}
