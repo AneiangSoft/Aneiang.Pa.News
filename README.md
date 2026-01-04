@@ -1,4 +1,6 @@
-# Pa.HotNews（热点聚合）
+<p align="center">
+    <img src="docments/logo.png" alt="Aneiang.Pa" width="600" style="vertical-align:middle;border-radius:8px;">
+</p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
@@ -70,6 +72,9 @@
 - Web 框架：ASP.NET Core
 - OpenAPI：Swashbuckle（Swagger）
 - 依赖：`Aneiang.Pa.AspNetCore`（以及其引入的抓取/聚合能力）
+
+> - Aneiang.Pa GitHub地址： [https://github.com/AneiangSoft/Aneiang.Pa](https://github.com/AneiangSoft/Aneiang.Pa)
+> - Aneiang.Pa Gitee地址： [https://gitee.com/aneiangsoft/Aneiang.Pa](https://gitee.com/aneiangsoft/Aneiang.Pa)
 
 ### 前端（`Pa.HotNews.Web`）
 

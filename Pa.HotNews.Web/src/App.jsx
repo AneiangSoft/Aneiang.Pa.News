@@ -656,7 +656,7 @@ function App() {
                 icon={<GithubOutlined />}
                 onClick={() =>
                   window.open(
-                    'https://github.com/AneiangSoft/Aneiang.Pa',
+                    'https://github.com/AneiangSoft/Aneiang.Pa.News',
                     '_blank',
                     'noopener,noreferrer'
                   )
