@@ -784,171 +784,203 @@ function App() {
       </header>
 
       <main className="app-main">
-        {isFirstLoading ? (
-          <div className="spin-container">
-            <Spin size="large" />
-          </div>
-        ) : (
-          <div className="news-grid">
-            {displaySources
-              .map(src => {
-                const block = newsBySource[src];
-                const status = block?.status || 'loading';
-                const news = block?.list;
-                const updatedTime = block?.updatedTime;
-                const errorMsg = block?.error;
-                const q = query.trim().toLowerCase();
-                const filtered = q
-                  ? (news || []).filter(n => (n?.title || '').toLowerCase().includes(q))
-                  : news;
+        {(() => {
+          if (isFirstLoading) {
+            return (
+              <div className="spin-container">
+                <Spin size="large" />
+              </div>
+            );
+          }
 
-                return {
-                  src,
-                  block,
-                  status,
-                  news,
-                  updatedTime,
-                  errorMsg,
-                  q,
-                  filtered,
-                  title: getChineseSourceName(src),
-                };
-              })
-              // 搜索时：只展示“有匹配数据”的卡片（避免一堆空卡片）
-              .filter(x => (x.q ? x.status !== 'success' || (x.filtered?.length ?? 0) > 0 : true))
-              .map(({ src, status, news, updatedTime, errorMsg, q, filtered, title }) => {
-                return (
-                <Card
-                  key={src}
-                  title={title}
-                  extra={
-                    <span className="card-extra">
-                      {status === 'error' ? (
-                        <Tooltip title={errorMsg || '加载失败'}>
-                          <span className="card-error-label">加载失败</span>
-                        </Tooltip>
-                      ) : updatedTime ? (
-                        <span className="card-updated" title={getFullTimeString(updatedTime)}>
-                          {formatTime(updatedTime)}
-                        </span>
-                      ) : null}
+          const q = query.trim().toLowerCase();
 
-                      {q && status === 'success' ? (
-                        <span className="card-extra-count">{`${filtered.length} / ${(news || []).length}`}</span>
-                      ) : null}
+          const cards = displaySources.map(src => {
+            const block = newsBySource[src];
+            const status = block?.status || 'loading';
+            const news = block?.list;
+            const updatedTime = block?.updatedTime;
+            const errorMsg = block?.error;
+            const filtered = q
+              ? (news || []).filter(n => (n?.title || '').toLowerCase().includes(q))
+              : news;
 
-                      {status === 'success' && (
-                        <Space size={2}>
-                          <Tooltip title="复制快照">
-                            <Button
-                              type="text"
-                              size="small"
-                              className="card-action-btn"
-                              icon={<CopyOutlined />}
-                              onClick={e => {
-                                e.stopPropagation();
-                                copySnapshot({
-                                  title,
-                                  items: news,
-                                  updatedTime,
-                                });
-                              }}
-                            />
-                          </Tooltip>
+            return {
+              src,
+              status,
+              news,
+              updatedTime,
+              errorMsg,
+              filtered,
+              title: getChineseSourceName(src),
+            };
+          });
 
-                          <Tooltip title="生成海报">
-                            <Button
-                              type="text"
-                              size="small"
-                              className="card-action-btn"
-                              icon={<ShareAltOutlined />}
-                              loading={isGeneratingPoster}
-                              onClick={e => {
-                                e.stopPropagation();
-                                generatePoster(src, news || [], updatedTime);
-                              }}
-                            />
-                          </Tooltip>
-                        </Space>
-                      )}
-                    </span>
-                  }
-                  className={`source-card status-${status}`}
-                  data-source={src.toLowerCase()}
-                >
-                  {status === 'error' ? (
-                    <div className="card-state-body">
-                      <div className="card-error-visual" aria-hidden="true">
-                        <img className="card-error-img" src="/error.svg" alt="" />
+          // 搜索中：若所有“成功卡片”都无匹配（且至少有一个成功卡片），则显示友好空状态
+          if (q) {
+            const successCards = cards.filter(x => x.status === 'success');
+            const hasAnyMatch = successCards.some(x => (x.filtered?.length ?? 0) > 0);
+
+            if (successCards.length > 0 && !hasAnyMatch) {
+              return (
+                <div style={{ padding: '60px 0' }}>
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={
+                      <div>
+                        <div style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 6 }}>
+                          没有找到与“{query.trim()}”相关的内容
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                          试试更换关键词，或清空搜索
+                        </div>
                       </div>
-
-                      <div className="card-error-text">加载失败</div>
-
-                      <div className="card-error-actions">
-                        <Button size="small" icon={<SyncOutlined />} onClick={() => retrySource(src)}>
-                          重试该来源
-                        </Button>
-                      </div>
-
-                      <div className="card-error-hint">提示：可能是接口限流/网络波动，稍等片刻再试。</div>
-                    </div>
-                  ) : status === 'success' ? (
-                    filtered?.length ? (
-                      <List
-                        className="news-list"
-                        dataSource={filtered}
-                        renderItem={(item, idx) => (
-                          <List.Item>
-                            <span className="news-rank">{idx + 1}</span>
-
-                            <Tooltip
-                              title={item.title}
-                              placement="topLeft"
-                              mouseEnterDelay={0.2}
-                              overlayClassName="news-title-tooltip"
-                            >
-                              <a
-                                href={item.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={readSet.has(item.url) ? 'is-read' : ''}
-                                onClick={() => markAsRead(item.url)}
-                              >
-                                {highlightText(item.title, query)}
-                              </a>
-                            </Tooltip>
-
-                            <button
-                              type="button"
-                              className={isFavorited(item.url) ? 'fav-btn is-fav' : 'fav-btn'}
-                              title={isFavorited(item.url) ? '取消收藏' : '收藏'}
-                              onClick={e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                toggleFavorite(item, src);
-                              }}
-                            >
-                              {isFavorited(item.url) ? <StarFilled /> : <StarOutlined />}
-                            </button>
-                          </List.Item>
-                        )}
-                      />
-                    ) : (
-                      <div className="card-state-body">
-                        <Empty description={q ? '没有匹配结果' : '暂无数据'} />
-                      </div>
-                    )
-                  ) : (
-                    <div className="card-state-body">
-                      <Spin size="small" />
-                      <span style={{ marginLeft: 8, color: 'var(--text-secondary)' }}>加载中...</span>
-                    </div>
-                  )}
-                </Card>
+                    }
+                  />
+                </div>
               );
-            })}
-          </div>
-        )}
+            }
+          }
+
+          return (
+            <div className="news-grid">
+              {cards
+                // 搜索时：只展示“有匹配数据”的卡片（避免一堆空卡片）
+                .filter(x => (q ? x.status !== 'success' || (x.filtered?.length ?? 0) > 0 : true))
+                .map(({ src, status, news, updatedTime, errorMsg, filtered, title }) => {
+                  return (
+                    <Card
+                      key={src}
+                      title={title}
+                      extra={
+                        <span className="card-extra">
+                          {status === 'error' ? (
+                            <Tooltip title={errorMsg || '加载失败'}>
+                              <span className="card-error-label">加载失败</span>
+                            </Tooltip>
+                          ) : updatedTime ? (
+                            <span className="card-updated" title={getFullTimeString(updatedTime)}>
+                              {formatTime(updatedTime)}
+                            </span>
+                          ) : null}
+
+                          {q && status === 'success' ? (
+                            <span className="card-extra-count">{`${filtered.length} / ${(news || []).length}`}</span>
+                          ) : null}
+
+                          {status === 'success' && (
+                            <Space size={2}>
+                              <Tooltip title="复制快照">
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  className="card-action-btn"
+                                  icon={<CopyOutlined />}
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    copySnapshot({
+                                      title,
+                                      items: news,
+                                      updatedTime,
+                                    });
+                                  }}
+                                />
+                              </Tooltip>
+
+                              <Tooltip title="生成海报">
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  className="card-action-btn"
+                                  icon={<ShareAltOutlined />}
+                                  loading={isGeneratingPoster}
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    generatePoster(src, news || [], updatedTime);
+                                  }}
+                                />
+                              </Tooltip>
+                            </Space>
+                          )}
+                        </span>
+                      }
+                      className={`source-card status-${status}`}
+                      data-source={src.toLowerCase()}
+                    >
+                      {status === 'error' ? (
+                        <div className="card-state-body">
+                          <div className="card-error-visual" aria-hidden="true">
+                            <img className="card-error-img" src="/error.svg" alt="" />
+                          </div>
+
+                          <div className="card-error-text">加载失败</div>
+
+                          <div className="card-error-actions">
+                            <Button size="small" icon={<SyncOutlined />} onClick={() => retrySource(src)}>
+                              重试该来源
+                            </Button>
+                          </div>
+
+                          <div className="card-error-hint">提示：可能是接口限流/网络波动，稍等片刻再试。</div>
+                        </div>
+                      ) : status === 'success' ? (
+                        filtered?.length ? (
+                          <List
+                            className="news-list"
+                            dataSource={filtered}
+                            renderItem={(item, idx) => (
+                              <List.Item>
+                                <span className="news-rank">{idx + 1}</span>
+
+                                <Tooltip
+                                  title={item.title}
+                                  placement="topLeft"
+                                  mouseEnterDelay={0.2}
+                                  overlayClassName="news-title-tooltip"
+                                >
+                                  <a
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={readSet.has(item.url) ? 'is-read' : ''}
+                                    onClick={() => markAsRead(item.url)}
+                                  >
+                                    {highlightText(item.title, query)}
+                                  </a>
+                                </Tooltip>
+
+                                <button
+                                  type="button"
+                                  className={isFavorited(item.url) ? 'fav-btn is-fav' : 'fav-btn'}
+                                  title={isFavorited(item.url) ? '取消收藏' : '收藏'}
+                                  onClick={e => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    toggleFavorite(item, src);
+                                  }}
+                                >
+                                  {isFavorited(item.url) ? <StarFilled /> : <StarOutlined />}
+                                </button>
+                              </List.Item>
+                            )}
+                          />
+                        ) : (
+                          <div className="card-state-body">
+                            <Empty description={q ? '没有匹配结果' : '暂无数据'} />
+                          </div>
+                        )
+                      ) : (
+                        <div className="card-state-body">
+                          <Spin size="small" />
+                          <span style={{ marginLeft: 8, color: 'var(--text-secondary)' }}>加载中...</span>
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+            </div>
+          );
+        })()}
       </main>
 
       {/* 来源管理 Drawer */}
