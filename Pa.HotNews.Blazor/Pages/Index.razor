@@ -48,9 +48,6 @@ else
                             <img class="card-error-img" src="/error.svg" alt="" />
                         </div>
                         <div class="card-error-text">加载失败</div>
-                        <div class="card-error-actions">
-                            <button type="button" @onclick="() => Retry(src ?? string.Empty)">重试该来源</button>
-                        </div>
                         <div class="card-error-hint">提示：可能是接口限流/网络波动，稍等片刻再试。</div>
                     </div>
                 }
