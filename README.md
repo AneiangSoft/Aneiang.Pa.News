@@ -230,6 +230,12 @@ API Controller 来自 `Aneiang.Pa.AspNetCore` 依赖包，仓库内未直接包�
 
 ---
 
+## 变更日志
+
+详见 [CHANGELOG.md](./CHANGELOG.md)。
+
+---
+
 ## 许可证
 
 本项目基于 **MIT License** 开源，详见 [LICENSE](./LICENSE)。
