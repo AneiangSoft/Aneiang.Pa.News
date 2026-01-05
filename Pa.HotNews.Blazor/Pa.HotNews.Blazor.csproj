@@ -9,6 +9,8 @@
   <ItemGroup>
     <PackageReference Include="Aneiang.Pa.News" Version="2.1.2" />
     <PackageReference Include="AntDesign" Version="1.5.1" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
   </ItemGroup>
 
 </Project>
