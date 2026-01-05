@@ -2,7 +2,8 @@ import axios from 'axios';
 
 // Create an axios instance with a base URL for our backend API
 const apiClient = axios.create({
-    baseURL: '/api/scraper/news', // Adjust the port if your backend runs on a different one
+    // 统一使用同源相对路径：生产环境(一体化容器)与开发环境(配合 Vite proxy)都无需改代码
+    baseURL: '/api/scraper/news',
     headers: {
         'Content-Type': 'application/json',
     },
