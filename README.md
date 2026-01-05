@@ -59,7 +59,7 @@
 - 聚合抓取：通过 `Aneiang.Pa.*` 相关组件聚合多个来源的内容（新闻/热搜/彩票等，具体以接口返回为准）
 - Swagger（开发环境）：本地开发时可直接通过 Swagger 调试接口
 - CORS 支持：默认允许跨域访问（生产环境建议收敛到指定域名）
-- 响应缓存：API 端启用 Response Caching，默认缓存 15 分钟
+- 响应缓存：API 端启用 Response Caching，默认缓存 30 分钟（可通过环境变量配置）
 - Docker 化部署：提供 `docker-compose.yml`，一键启动前后端
 
 ---
@@ -98,7 +98,42 @@
 
 ---
 
-## 快速开始（推荐：Docker Compose）
+## 快速开始
+
+### 方式 A：直接使用 Docker 镜像（无需下载源码）
+
+确保已安装 Docker。
+
+```bash
+# 拉取镜像（推荐使用固定版本）
+docker pull caco/aneiang-pa-news:1.0.0
+
+# 运行
+docker run -d --name aneiang-pa-news \
+  -p 5000:8080 \
+  -e ASPNETCORE_URLS=http://+:8080 \
+  -e ASPNETCORE_ENVIRONMENT=Production \
+  -e HotNews__EnableCache=true \
+  -e HotNews__CacheSeconds=1800 \
+  caco/aneiang-pa-news:1.0.0
+```
+
+启动后：
+
+- Web + API（同一个服务）：`http://localhost:5000`
+  - Web 首页：`http://localhost:5000/`
+  - API 前缀：`http://localhost:5000/api/...`
+
+停止/删除容器：
+
+```bash
+docker stop aneiang-pa-news
+docker rm aneiang-pa-news
+```
+
+---
+
+### 方式 B：Docker Compose（从源码构建）
 
 确保已安装：Docker / Docker Compose。
 
@@ -108,14 +143,8 @@
 docker compose up -d --build
 ```
 
-启动后：
-
-- Web：`http://localhost:5173`
-- API：`http://localhost:5000`
-
 > compose 映射关系（见 `docker-compose.yml`）：
-> - API 容器内部 `8080` → 宿主机 `5000`
-> - Web 容器内部 `80` → 宿主机 `5173`
+> - 容器内部 `8080` → 宿主机 `5000`
 
 停止：
 
@@ -166,7 +195,7 @@ npm run dev
 
 - 路由前缀：`/api/scraper`
 - route 小写：启用
-- 响应缓存：启用（默认 900 秒）
+- 响应缓存：启用（默认 1800 秒 / 30 分钟，可配置）
 
 因此接口一般形如：
 
@@ -190,6 +219,35 @@ curl -i http://localhost:5000/api/scraper
 
 ---
 
+## 缓存配置
+
+可通过环境变量配置接口缓存（单位：秒）：
+
+- `HotNews__EnableCache`：是否启用缓存（`true/false`）
+- `HotNews__CacheSeconds`：缓存秒数（例如 1800 = 30 分钟）
+
+### Docker Compose 示例（默认 30 分钟）
+
+```yml
+environment:
+  - HotNews__EnableCache=true
+  - HotNews__CacheSeconds=1800
+```
+
+### docker run 示例
+
+```bash
+docker run -d --name aneiang-pa-news \
+  -p 5000:8080 \
+  -e ASPNETCORE_URLS=http://+:8080 \
+  -e ASPNETCORE_ENVIRONMENT=Production \
+  -e HotNews__EnableCache=true \
+  -e HotNews__CacheSeconds=1800 \
+  caco/aneiang-pa-news:1.0.0
+```
+
+---
+
 ## 常见问题（FAQ）
 
 ### 1）某些来源显示“加载失败”怎么办？
@@ -197,7 +255,7 @@ curl -i http://localhost:5000/api/scraper
 - 可能原因：网络波动、第三方站点限流、站点结构变动导致抓取失败。
 - 解决办法：
   - 点击该来源卡片内的“重试该来源”
-  - 稍等一段时间再刷新（后端默认缓存 15 分钟，短时间内频繁刷新意义不大）
+  - 稍等一段时间再刷新（后端默认缓存 30 分钟，短时间内频繁刷新意义不大）
   - 若长期失败，欢迎提 Issue 并附上：来源名、时间点、控制台/后端日志
 
 ### 2）Docker 启动后端口被占用？

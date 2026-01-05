@@ -10,7 +10,8 @@ export default defineConfig({
     proxy: {
       // 将 /api 请求代理到后端 ASP.NET Core 服务
       '/api': {
-        target: 'http://113.45.65.71:8921', // 后端监听的地址
+        // 本地开发时，把 /api 代理到后端。生产环境（Docker 一体镜像）走同源无需代理。
+        target: 'http://localhost:8080', // 如果你后端本地端口不同，改这里
         changeOrigin: true,
         secure: false,
       },

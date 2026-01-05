@@ -1,21 +1,15 @@
 services:
-  api:
+  hotnews:
+    image: caco/aneiang-pa-news:latest
     build:
       context: .
-      dockerfile: Pa.HotNews.Api/Dockerfile
-    container_name: pa-hotnews-api
+      dockerfile: Dockerfile
+    container_name: aneiang-pa-news
     ports:
       - "5000:8080"
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - ASPNETCORE_ENVIRONMENT=Production
-
-  web:
-    build:
-      context: .
-      dockerfile: Pa.HotNews.Web/Dockerfile
-    container_name: pa-hotnews-web
-    depends_on:
-      - api
-    ports:
-      - "5173:80"
+      # 接口响应缓存（默认 30 分钟 = 1800 秒）
+      - HotNews__EnableCache=true
+      - HotNews__CacheSeconds=1800
