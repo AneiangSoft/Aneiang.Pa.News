@@ -2,8 +2,37 @@ using Aneiang.Pa.AspNetCore.Extensions;
 using Aneiang.Pa.Lottery.Extensions;
 using Aneiang.Pa.News.Extensions;
 using Microsoft.Extensions.FileProviders;
+using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 0. Configure logging (Serilog)
+// - Console output in structured JSON-like format is recommended for Docker / K8s log collection
+// - Log level can be controlled via appsettings / environment variables (Serilog section)
+var logDir = builder.Configuration["LOG_DIR"]
+             ?? builder.Configuration["HotNews:LogDir"]
+             ?? Path.Combine(AppContext.BaseDirectory, "logs");
+Directory.CreateDirectory(logDir);
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    // Rolling file logs (Beijing time is handled by container TZ=Asia/Shanghai)
+    .WriteTo.File(
+        path: Path.Combine(logDir, "hotnews-.log"),
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14,
+        rollOnFileSizeLimit: true,
+        fileSizeLimitBytes: 50 * 1024 * 1024,
+        shared: true,
+        flushToDiskInterval: TimeSpan.FromSeconds(1),
+        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {Level:u3}] {Message:lj}{NewLine}{Exception}")
+    .CreateLogger();
+
+builder.Host.UseSerilog(Log.Logger, dispose: true);
 
 // 1. Add services to the container.
 
@@ -55,17 +84,17 @@ builder.Services.AddScraperController(options =>
 var app = builder.Build();
 
 // 启动日志：输出基础运行配置，便于排查部署问题
-app.Logger.LogInformation("===== Aneiang.Pa.News (HotNews) Startup =====");
-app.Logger.LogInformation("Environment: {EnvironmentName}", app.Environment.EnvironmentName);
-app.Logger.LogInformation("ContentRoot: {ContentRoot}", app.Environment.ContentRootPath);
-app.Logger.LogInformation("WebRoot: {WebRoot}", app.Environment.WebRootPath);
-app.Logger.LogInformation("Cache Enabled: {EnableCache}", enableCache);
-app.Logger.LogInformation("Cache Seconds: {CacheSeconds}", cacheSeconds);
-app.Logger.LogInformation("API Route Prefix: /{RoutePrefix}", "api/scraper");
-app.Logger.LogInformation("ASPNETCORE_URLS: {Urls}", builder.Configuration["ASPNETCORE_URLS"] ?? "(not set)");
-app.Logger.LogInformation("HTTPS Redirection Enabled: true");
-app.Logger.LogInformation("Swagger Enabled (Development only): {SwaggerEnabled}", app.Environment.IsDevelopment());
-app.Logger.LogInformation("============================================");
+Log.Information("===== Aneiang.Pa.News (HotNews) Startup =====");
+Log.Information("Environment: {EnvironmentName}", app.Environment.EnvironmentName);
+Log.Information("ContentRoot: {ContentRoot}", app.Environment.ContentRootPath);
+Log.Information("WebRoot: {WebRoot}", app.Environment.WebRootPath);
+Log.Information("Cache Enabled: {EnableCache}", enableCache);
+Log.Information("Cache Seconds: {CacheSeconds}", cacheSeconds);
+Log.Information("API Route Prefix: /{RoutePrefix}", "api/scraper");
+Log.Information("ASPNETCORE_URLS: {Urls}", builder.Configuration["ASPNETCORE_URLS"] ?? "(not set)");
+Log.Information("HTTPS Redirection Enabled: true");
+Log.Information("Swagger Enabled (Development only): {SwaggerEnabled}", app.Environment.IsDevelopment());
+Log.Information("============================================");
 
 // 3. Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -99,11 +128,23 @@ if (Directory.Exists(wwwrootPath))
     // SPA 路由回退：对所有非 /api 的路由返回 index.html（用于 React Router 等前端路由）
     app.MapFallbackToFile("index.html");
 
-    app.Logger.LogInformation("Static Web Enabled: true (wwwroot found)");
+    Log.Information("Static Web Enabled: true (wwwroot found)");
 }
 else
 {
-    app.Logger.LogInformation("Static Web Enabled: false (wwwroot not found)");
+    Log.Information("Static Web Enabled: false (wwwroot not found)");
 }
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
