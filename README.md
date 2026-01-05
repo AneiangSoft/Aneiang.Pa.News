@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Docker Pulls](https://img.shields.io/docker/pulls/caco/aneiang-pa-news)](https://hub.docker.com/r/caco/aneiang-pa-news)
 
-一个简单的“热点/热搜聚合”示例项目：后端基于 ASP.NET Core 提供聚合抓取接口，前端基于 React + Vite 展示与分享热点内容。
+一个“热点/热搜聚合”项目：后端基于 ASP.NET Core 提供聚合抓取接口，前端基于 React + Vite 展示与分享热点内容。
 
 - 在线预览：<https://news.aneiang.com/>
 - Docker 镜像：`caco/aneiang-pa-news`（建议使用固定版本 tag，例如 `:1.0.2`）
@@ -24,16 +24,21 @@
 
 ```bash
 # 拉取镜像（推荐使用固定版本）
-docker pull caco/aneiang-pa-news:1.0.2
+docker pull caco/aneiang-pa-news:1.0.3
 
-# 运行（默认端口 5000）
+# 运行（默认端口 5000），并将日志挂载到宿主机（推荐）
+# - 容器内默认日志目录：/app/logs
+# - 宿主机日志目录：./logs（相对于当前命令执行目录）
+mkdir -p logs
+
 docker run -d --name aneiang-pa-news \
   -p 5000:8080 \
   -e ASPNETCORE_URLS=http://+:8080 \
   -e ASPNETCORE_ENVIRONMENT=Production \
   -e HotNews__EnableCache=true \
   -e HotNews__CacheSeconds=1800 \
-  caco/aneiang-pa-news:1.0.2
+  -v $(pwd)/logs:/app/logs \
+  caco/aneiang-pa-news:1.0.3
 ```
 
 启动后：
@@ -97,7 +102,7 @@ docker run -d --name aneiang-pa-news \
   -p 5000:8080 \
   -e HotNews__EnableCache=true \
   -e HotNews__CacheSeconds=300 \
-  caco/aneiang-pa-news:1.0.2
+  caco/aneiang-pa-news:1.0.3
 ```
 
 ---
@@ -170,7 +175,7 @@ npm run dev
 
 ```bash
 # 把宿主机端口改为 15000
-docker run -d --name aneiang-pa-news -p 15000:8080 caco/aneiang-pa-news:1.0.2
+docker run -d --name aneiang-pa-news -p 15000:8080 caco/aneiang-pa-news:1.0.3
 ```
 
 ---
