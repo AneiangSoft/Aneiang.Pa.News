@@ -361,3 +361,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Pa.HotNews.Api/wwwroot/assets
+/Pa.HotNews.Api/wwwroot/browserconfig.xml
+/Pa.HotNews.Api/wwwroot/error.svg
+/Pa.HotNews.Api/wwwroot/index.html
+/Pa.HotNews.Api/wwwroot/og.svg
+/Pa.HotNews.Api/wwwroot/og.txt
+/Pa.HotNews.Api/wwwroot/site.webmanifest
+/Pa.HotNews.Api/wwwroot/vite.svg
