@@ -10,9 +10,10 @@
 - 在线预览：<https://news.aneiang.com/>
 - Docker 镜像：`caco/aneiang-pa-news`（建议使用固定版本 tag，例如 `:1.0.2`）
 
-> 仓库包含两个子项目：
+> 仓库主要包含以下项目：
 > - `Pa.HotNews.Api`：ASP.NET Core Web API（聚合抓取 + 静态站点托管）
-> - `Pa.HotNews.Web`：React + Vite 前端
+> - `Pa.HotNews.Web`：React + Vite 前端（主要）
+> - `Pa.HotNews.Blazor`：AntDesign Blazor Server 前端（备选，可单独运行，不需要可以删除）
 
 ---
 
