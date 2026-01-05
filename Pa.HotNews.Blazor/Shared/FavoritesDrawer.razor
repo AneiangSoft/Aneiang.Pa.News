@@ -1,0 +1,133 @@
+@implements IDisposable
+
+@using Pa.HotNews.Blazor.Models
+
+@inject Pa.HotNews.Blazor.Services.FavoritesService Favorites
+@inject Pa.HotNews.Blazor.Services.SourceNameService SourceNames
+
+@if (Visible)
+{
+    <div class="hotnews-drawer-mask" @onclick="OnClose"></div>
+    <div class="hotnews-drawer">
+        <div class="hotnews-drawer-header">
+            <div class="hotnews-drawer-title">@Title</div>
+            <button class="hotnews-drawer-close" @onclick="OnClose">×</button>
+        </div>
+
+        <div class="hotnews-drawer-body">
+            @if (Favorites.Count == 0)
+            {
+                <Empty />
+            }
+            else
+            {
+                <div class="fav-tools" style="margin-bottom: 12px; display:flex; flex-direction: column; gap: 8px;">
+                    <input class="search-input" placeholder="在收藏中搜索标题..." @bind="_query" @bind:event="oninput" />
+                    <select style="width:100%;" value="@_source" @onchange="OnSourceChanged">
+                        <option value="all">全部来源</option>
+                        @foreach (var s in _sources)
+                        {
+                            <option value="@s">@SourceNames.ToDisplayName(s)</option>
+                        }
+                    </select>
+                    <button type="button" class="btn-danger" disabled="@(Favorites.Count==0)" @onclick="Clear">清空</button>
+                </div>
+
+                <div class="news-list" style="max-height: calc(100vh - 220px);">
+                    @foreach (var fav in Filtered())
+                    {
+                        <div class="news-item">
+                            <a href="@fav.Url" target="_blank" rel="noopener noreferrer" class="is-read">@fav.Title</a>
+                            <button class="fav-btn is-fav" title="取消收藏" @onclick="() => Toggle(fav)" @onclick:stopPropagation>★</button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+
+    private string _query = string.Empty;
+    private string _source = "all";
+    private List<string> _sources = new();
+
+    private string Title => $"收藏（{Favorites.Count}）";
+
+    protected override void OnInitialized()
+    {
+        Favorites.Changed += HandleChanged;
+        RebuildSources();
+    }
+
+    private void HandleChanged()
+    {
+        RebuildSources();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void RebuildSources()
+    {
+        _sources = Favorites.Items
+            .Select(x => x.Source)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x)
+            .Select(x => x!)
+            .ToList();
+
+        if (_source != "all" && !_sources.Contains(_source, StringComparer.OrdinalIgnoreCase))
+            _source = "all";
+    }
+
+    private IEnumerable<FavoriteItem> Filtered()
+    {
+        var list = Favorites.Items
+            .OrderByDescending(x => x.Ts)
+            .ToList();
+
+        var q = _query.Trim();
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            list = list.Where(x => (x.Title ?? string.Empty).Contains(q, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        if (_source != "all")
+        {
+            list = list.Where(x => string.Equals(x.Source, _source, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        return list;
+    }
+
+    private Task OnClose()
+    {
+        Visible = false;
+        return VisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task Clear()
+    {
+        await Favorites.ClearAsync();
+    }
+
+    private async Task Toggle(FavoriteItem fav)
+    {
+        await Favorites.ToggleAsync(fav.Url, fav.Title, fav.Source);
+    }
+
+    private Task OnSourceChanged(ChangeEventArgs e)
+    {
+        _source = e.Value?.ToString() ?? "all";
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        Favorites.Changed -= HandleChanged;
+    }
+}

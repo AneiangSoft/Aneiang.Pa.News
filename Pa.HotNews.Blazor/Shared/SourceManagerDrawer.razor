@@ -1,0 +1,156 @@
+@implements IDisposable
+
+@inject Pa.HotNews.Blazor.Services.SourceConfigService SourceCfg
+@inject Pa.HotNews.Blazor.Services.SourceNameService SourceNames
+
+@if (Visible)
+{
+    <div class="hotnews-drawer-mask" @onclick="OnClose"></div>
+    <div class="hotnews-drawer">
+        <div class="hotnews-drawer-header">
+            <div class="hotnews-drawer-title">来源管理</div>
+            <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+                <button type="button" @onclick="Reset">重置</button>
+                <button class="hotnews-drawer-close" @onclick="OnClose">×</button>
+            </div>
+        </div>
+
+        <div class="hotnews-drawer-body">
+            <div style="color: var(--text-secondary); font-size: 12px; margin-bottom: 10px;">
+                勾选显示/隐藏来源；使用上下按钮调整卡片顺序。
+            </div>
+
+            @if (_all.Count == 0)
+            {
+                <Empty />
+            }
+            else
+            {
+                <div style="margin-bottom: 10px;">
+                    <label style="display:flex; gap:8px; align-items:center; cursor:pointer;">
+                        <input type="checkbox" checked="@AllChecked" @onchange="OnCheckAllChanged" />
+                        <span>全选</span>
+                    </label>
+                </div>
+
+                <div>
+                    @for (var i = 0; i < _order.Count; i++)
+                    {
+                        var src = _order[i];
+                        var visible = !_hidden.Contains(src);
+                        <div style="display:flex; align-items:center; gap: 8px; padding: 8px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.08);">
+                            <label style="display:flex; gap:8px; align-items:center; flex:1; cursor:pointer;">
+                                <input type="checkbox" checked="@visible" @onchange="(e) => OnVisibleChanged(src, e)" />
+                                <span>@SourceNames.ToDisplayName(src)</span>
+                            </label>
+
+                            <div style="display:flex; gap:4px;">
+                                <button type="button" disabled="@(i==0)" @onclick="() => Move(src, -1)">↑</button>
+                                <button type="button" disabled="@(i==_order.Count-1)" @onclick="() => Move(src, 1)">↓</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div style="margin-top: 12px; color: var(--text-secondary); font-size: 12px;">
+                    提示：隐藏来源不会删除数据，只是不在首页展示。
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+
+    [Parameter] public IEnumerable<string> AllSources { get; set; } = Array.Empty<string>();
+
+    private List<string> _all = new();
+    private List<string> _order = new();
+    private HashSet<string> _hidden = new(StringComparer.OrdinalIgnoreCase);
+
+    protected override void OnInitialized()
+    {
+        SourceCfg.Changed += HandleChanged;
+        Rebuild();
+    }
+
+    protected override void OnParametersSet()
+    {
+        Rebuild();
+    }
+
+    private void HandleChanged()
+    {
+        Rebuild();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void Rebuild()
+    {
+        _all = (AllSources ?? Array.Empty<string>())
+            .Select(s => (s ?? string.Empty).Trim().ToLowerInvariant())
+            .Where(s => s.Length > 0)
+            .Distinct()
+            .OrderBy(s => s)
+            .ToList();
+
+        _order = (SourceCfg.Config.Order ?? new List<string>())
+            .Select(s => (s ?? string.Empty).Trim().ToLowerInvariant())
+            .Where(s => _all.Contains(s))
+            .ToList();
+
+        foreach (var s in _all)
+        {
+            if (!_order.Contains(s)) _order.Add(s);
+        }
+
+        _hidden = new HashSet<string>(SourceCfg.Config.Hidden ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private bool AllChecked => _all.Count > 0 && _hidden.Count == 0;
+
+    private async Task OnCheckAllChanged(ChangeEventArgs e)
+    {
+        var value = e.Value is true || (e.Value?.ToString()?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false);
+
+        if (value)
+        {
+            foreach (var s in _all)
+                await SourceCfg.SetVisibleAsync(s, true);
+        }
+        else
+        {
+            foreach (var s in _all)
+                await SourceCfg.SetVisibleAsync(s, false);
+        }
+    }
+
+    private async Task OnVisibleChanged(string src, ChangeEventArgs e)
+    {
+        var value = e.Value is true || (e.Value?.ToString()?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? false);
+        await SourceCfg.SetVisibleAsync(src, value);
+    }
+
+    private async Task Move(string src, int dir)
+    {
+        await SourceCfg.MoveAsync(src, dir);
+    }
+
+    private async Task Reset()
+    {
+        await SourceCfg.ResetAsync(_all);
+    }
+
+    private Task OnClose()
+    {
+        Visible = false;
+        return VisibleChanged.InvokeAsync(false);
+    }
+
+    public void Dispose()
+    {
+        SourceCfg.Changed -= HandleChanged;
+    }
+}
