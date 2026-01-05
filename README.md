@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Docker Pulls](https://img.shields.io/docker/pulls/caco/aneiang-pa-news)](https://hub.docker.com/r/caco/aneiang-pa-news)
 
-一个简单的“热点/热搜聚合”示例项目：后端基于 ASP.NET Core 提供聚合抓取接口，前端基于 React + Vite 展示与分享热点内容。
+一个“热点/热搜聚合”项目：后端基于 ASP.NET Core 提供聚合抓取接口，前端基于 React + Vite 展示与分享热点内容。
 
 - 在线预览：<https://news.aneiang.com/>
 - Docker 镜像：`caco/aneiang-pa-news`（建议使用固定版本 tag，例如 `:1.0.2`）
