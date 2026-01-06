@@ -91,6 +91,121 @@ docker compose down
 
 ## 配置
 
+### 推荐：Docker 运行时通过“挂载配置文件”配置（更适合配置项较多的场景）
+
+当配置项逐渐变多时（例如站点标题、备案号、缓存参数、大模型 API Key 等），通过 `docker run -e ...` 写大量环境变量会很麻烦。
+
+推荐做法：**在宿主机准备一个 `appsettings.Production.json`，运行容器时挂载到容器 `/app/appsettings.Production.json`**。
+
+> .NET 会自动加载：`appsettings.json` → `appsettings.{ENV}.json` → 环境变量。
+
+#### 1）宿主机准备配置文件
+
+例如创建：`./config/appsettings.Production.json`
+
+```json
+{
+  "Site": {
+    "Title": "Aneiang 热榜聚合",
+    "TitleSuffix": " - 全网热点实时聚合",
+    "IcpLicense": "湘ICP备2023022000号-2"
+  },
+  "HotNews": {
+    "EnableCache": true,
+    "CacheSeconds": 1800
+  },
+  "LlmRanking": {
+    "ApiKey": "你的_API_KEY_放这里（可选）"
+  }
+}
+```
+
+#### 2）docker run 示例（挂载配置文件）
+
+```bash
+mkdir -p logs
+mkdir -p config
+
+docker run -d --name aneiang-pa-news \
+  -p 5000:8080 \
+  -e ASPNETCORE_URLS=http://+:8080 \
+  -e ASPNETCORE_ENVIRONMENT=Production \
+  -v $(pwd)/logs:/app/logs \
+  -v $(pwd)/config/appsettings.Production.json:/app/appsettings.Production.json:ro \
+  caco/aneiang-pa-news:1.0.3
+```
+
+> Windows PowerShell 挂载示例：
+>
+> ```powershell
+> docker run -d --name aneiang-pa-news `
+>   -p 5000:8080 `
+>   -e ASPNETCORE_URLS=http://+:8080 `
+>   -e ASPNETCORE_ENVIRONMENT=Production `
+>   -v ${PWD}\logs:/app/logs `
+>   -v ${PWD}\config\appsettings.Production.json:/app/appsettings.Production.json:ro `
+>   caco/aneiang-pa-news:1.0.3
+> ```
+
+#### 3）docker-compose.yml（从源码构建）也可同样挂载
+
+在 `docker-compose.yml` 的 service 下添加 volume：
+
+```yaml
+services:
+  hotnews:
+    # ...
+    volumes:
+      - ./logs:/app/logs
+      - ./config/appsettings.Production.json:/app/appsettings.Production.json:ro
+```
+
+---
+
+### 站点配置（Site）
+
+> 通过 `GET /api/site-config` 下发给前端。
+
+可配置项：
+
+- `Site:Title`：导航栏标题
+- `Site:TitleSuffix`：浏览器标题后缀（可选；不填时前端默认使用 ` - 全网热点实时聚合`）
+- `Site:IcpLicense`：备案号（可选；不填则页脚不展示）
+
+#### 配置示例
+
+**1）通过环境变量配置（适合少量配置）**
+
+> 注意：在环境变量中，配置层级分隔符使用双下划线 `__`（例如 `Site__Title`）。
+
+```bash
+docker run -d --name aneiang-pa-news \
+  -p 5000:8080 \
+  -e Site__Title="Aneiang 热榜聚合" \
+  -e Site__TitleSuffix=" - 全网热点实时聚合" \
+  -e Site__IcpLicense="湘ICP备2023022000号-2" \
+  caco/aneiang-pa-news:1.0.3
+```
+
+**2）通过挂载配置文件（推荐，适合配置项较多）**
+
+在 `./config/appsettings.Production.json` 中写入：
+
+```json
+{
+  "Site": {
+    "Title": "Aneiang 热榜聚合",
+    "TitleSuffix": " - 全网热点实时聚合",
+    "IcpLicense": "湘ICP备2023022000号-2"
+  }
+}
+```
+
+说明：
+- 版权 **不可配置**，前端固定显示：`AneiangSoft © {当前年份}`。
+
+---
+
 ### 缓存配置（默认 30 分钟）
 
 可通过环境变量配置接口缓存（单位：秒）：
@@ -108,6 +223,17 @@ docker run -d --name aneiang-pa-news \
   caco/aneiang-pa-news:1.0.3
 ```
 
+> 说明：当你使用“挂载 appsettings.Production.json”时，也可以用 JSON 方式配置：
+>
+> ```json
+> {
+>   "HotNews": {
+>     "EnableCache": true,
+>     "CacheSeconds": 300
+>   }
+> }
+> ```
+
 ### 大模型排行榜（可选功能）
 
 项目支持“大语言模型排行榜”页面（数据来源：<https://artificialanalysis.ai/>）。
@@ -123,7 +249,7 @@ docker run -d --name aneiang-pa-news \
 
 后端会对第三方接口结果做 **24 小时内存缓存**（IMemoryCache）。
 
-#### 通过 Docker 镜像启用（docker run）
+#### 通过 Docker 镜像启用（docker run / 环境变量）
 
 使用环境变量 `LlmRanking__ApiKey`（注意是双下划线 `__`）：
 
@@ -138,69 +264,23 @@ docker run -d --name aneiang-pa-news \
   caco/aneiang-pa-news:1.0.3
 ```
 
-#### 通过 Docker Compose 启用（从源码构建）
+#### 通过挂载配置文件启用（推荐）
 
-在 `docker-compose.yml` 的 `environment` 中新增一行：
+在 `./config/appsettings.Production.json` 中写入：
 
-```yaml
-- LlmRanking__ApiKey=你的_API_KEY_放这里
-```
-
-示例（片段，基于当前仓库 `docker-compose.yml`）：
-
-```yaml
-services:
-  hotnews:
-    image: caco/aneiang-pa-news:latest
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: aneiang-pa-news
-    ports:
-      - "5000:8080"
-    environment:
-      - ASPNETCORE_URLS=http://+:8080
-      - ASPNETCORE_ENVIRONMENT=Production
-      - HotNews__EnableCache=true
-      - HotNews__CacheSeconds=1800
-      - LlmRanking__ApiKey=你的_API_KEY_放这里
+```json
+{
+  "LlmRanking": {
+    "ApiKey": "你的_API_KEY_放这里"
+  }
+}
 ```
 
 #### 启用后验证
 
-- 功能开关：`GET /api/features`（应返回 `{"llmRanking": true}`）
-- 前端直达：`/?view=llm`
 - 数据接口：`GET /api/llm-ranking/models`
 
 > 注意：容器需要能访问外网 `https://artificialanalysis.ai/`。
-
----
-
-## 功能开关（Feature Flags）
-
-为方便后续扩展（例如新增更多功能页面/模块），项目提供统一的功能开关接口：
-
-- `GET /api/features`
-
-返回示例：
-
-```json
-{
-  "llmRanking": true
-}
-```
-
-前端会根据该接口返回值决定：
-
-- 是否展示对应入口（例如导航 Segmented 中的“大模型”）
-- 是否允许通过 URL 参数直接访问（例如 `?view=llm`）
-
----
-
-## 前端访问方式
-
-- 热榜（默认）：`/`
-- 大模型排行榜：`/?view=llm`（需要 `llmRanking=true`）
 
 ---
 
