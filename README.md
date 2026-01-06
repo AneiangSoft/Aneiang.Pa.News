@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docments/logo.png" alt="Aneiang.Pa" width="600" style="vertical-align:middle;border-radius:8px;" />
+  <img src="docments/logo-light.svg" alt="Aneiang.Pa" width="150" style="vertical-align:middle;border-radius:8px;" />
 </p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)

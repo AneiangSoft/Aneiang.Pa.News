@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 const SITE_ORIGIN = 'https://news.aneiang.com';
 
 import Poster from './components/Poster';
-import AneiangLogo from './assets/Aneiang.png';
+import LogoDark from './assets/logo-dark.svg';
+import LogoLight from './assets/logo-light.svg';
+import LogoWarm from './assets/logo-warm.svg';
 import { nodeToPngBlob, downloadBlob } from './utils/poster';
 import { Grid } from 'antd';
 import {
@@ -699,7 +701,11 @@ function App() {
     <div className="app-container">
       <header className="app-header">
         <div className="logo">
-          <img className="logo-img" src={AneiangLogo} alt="Aneiang" />
+          <img
+            className="logo-img"
+            src={{ dark: LogoDark, light: LogoLight, warm: LogoWarm }[theme]}
+            alt="热榜聚合 Logo"
+          />
           <h1>热榜聚合</h1>
 
           {availableViews.length > 1 && (
@@ -1280,6 +1286,7 @@ function App() {
             updatedTimeText={posterData.updatedTime ? getFullTimeString(posterData.updatedTime) : ''}
             siteText="news.aneiang.com"
             theme={theme}
+            qrText="https://news.aneiang.com/"
           />
         )}
       </div>
