@@ -15,6 +15,10 @@
 > - `Pa.HotNews.Web`：React + Vite 前端（主要）
 > - `Pa.HotNews.Blazor`：AntDesign Blazor Server 前端（备选，可单独运行，不需要可以删除）
 
+PS:项目基于Aeniang.Pa爬虫库实现，有兴趣的小伙伴可以点击了解
+- Github:[https://github.com/AneiangSoft/Aneiang.Pa](https://github.com/AneiangSoft/Aneiang.Pa)
+- Gitee:[https://gitee.com/AneiangSoft/Aneiang.Pa](https://gitee.com/AneiangSoft/Aneiang.Pa)
+
 ---
 
 ## 快速开始
