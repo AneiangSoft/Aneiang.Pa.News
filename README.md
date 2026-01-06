@@ -11,7 +11,7 @@
     <a href="https://github.com/AneiangSoft/Aneiang.Pa.News/issues">
       <img src="https://img.shields.io/github/issues/AneiangSoft/Aneiang.Pa.News" alt="GitHub issues">
     </a>
-    <a href="https://github.com/AneiangSoft/Aneiang.Pa.News/blob/main/LICENSE">
+    <a href="https://github.com/AneiangSoft/Aneiang.Pa.News/blob/master/LICENSE">
       <img src="https://img.shields.io/github/license/AneiangSoft/Aneiang.Pa.News" alt="License">
     </a>
     <a href="https://hub.docker.com/r/caco/aneiang-pa-news">
