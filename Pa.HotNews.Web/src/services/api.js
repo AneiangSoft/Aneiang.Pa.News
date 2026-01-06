@@ -49,3 +49,21 @@ export const getNews = async (source, { bustCache = false } = {}) => {
     }
 };
 
+/**
+ * 获取大模型排行（调用我们自己的后端代理，不暴露第三方 x-api-key）
+ * @returns {Promise<object>}
+ */
+export const getLlmModelsRanking = async () => {
+    try {
+        const response = await axios.get('/api/llm-ranking/models', {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching llm models ranking:', error);
+        throw error;
+    }
+};
+

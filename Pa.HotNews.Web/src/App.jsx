@@ -46,6 +46,8 @@ import {
 } from '@ant-design/icons';
 
 import { getSources, getNews } from './services/api';
+import { getFeatures } from './services/features';
+import LlmRanking from './components/LlmRanking';
 import { formatTime, getFullTimeString } from './utils/formatTime';
 import { highlightText } from './utils/highlight';
 import { quickShare } from './utils/share';
@@ -83,6 +85,60 @@ function App() {
   const screens = useBreakpoint();
   const isMobile = !screens.xl;
   const [newsBySource, setNewsBySource] = useState({});
+
+  // 功能开关（Feature Flags）
+  const [features, setFeatures] = useState({});
+
+  const isFeatureEnabled = (key) => {
+    if (!key) return true;
+    return !!features?.[key];
+  };
+
+  // 页面视图：使用 URL 参数 view 控制，默认 hotnews
+  const getViewFromUrl = () => {
+    try {
+      const url = new URL(location.href);
+      const v = (url.searchParams.get('view') || '').trim().toLowerCase();
+      return v || 'hotnews';
+    } catch {
+      // ignore
+    }
+    return 'hotnews';
+  };
+
+  const [view, setView] = useState(getViewFromUrl);
+
+  // 视图注册表：后续新增功能只需要在这里追加一项
+  const VIEW_DEFS = useMemo(
+    () => [
+      { key: 'hotnews', label: '热榜', featureKey: null },
+      { key: 'llm', label: '大模型', featureKey: 'llmRanking' },
+    ],
+    []
+  );
+
+  const availableViews = useMemo(() => {
+    return VIEW_DEFS.filter(v => isFeatureEnabled(v.featureKey));
+  }, [VIEW_DEFS, features]);
+
+  const handleViewChange = newView => {
+    // 防御：若该 view 未启用，不允许切换
+    const def = VIEW_DEFS.find(v => v.key === newView);
+    if (!def || !isFeatureEnabled(def.featureKey)) return;
+
+    if (view === newView) return;
+
+    setView(newView);
+    const url = new URL(window.location);
+
+    if (newView === 'hotnews') {
+      url.searchParams.delete('view');
+    } else {
+      url.searchParams.set('view', newView);
+    }
+    window.history.pushState({ view: newView }, '', url);
+  };
+
   // 全局 loading 仅用于首次加载骨架屏
   const [isFirstLoading, setIsFirstLoading] = useState(true);
 
@@ -222,11 +278,18 @@ function App() {
   // 这里用 ref 兜底，避免 dev 下重复请求。
   const didFetchRef = useRef(false);
 
-  // 首次进入：解析 URL 参数（q/theme/sources）
+  // 首次进入：解析 URL 参数（q/theme/sources/view）
   // - q: 搜索词
   // - theme: dark|light|warm
   // - sources: 仅显示这些来源（逗号分隔）
+  // - view: hotnews|llm（大模型排行）
   useEffect(() => {
+    const onPopState = () => {
+      // 处理浏览器前进/后退：根据 URL 参数同步 view
+      setView(getViewFromUrl());
+    };
+    window.addEventListener('popstate', onPopState);
+
     try {
       const url = new URL(location.href);
       const sp = url.searchParams;
@@ -245,18 +308,55 @@ function App() {
           .filter(Boolean);
         setSourceWhitelist(list.length ? Array.from(new Set(list)) : null);
       }
+
+      const viewRaw = (sp.get('view') || '').trim().toLowerCase();
+      if (viewRaw) setView(viewRaw);
     } catch {
       // ignore
     }
+
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+    };
   }, []);
 
   // 51LA 页脚挂件容器
   const laWidgetRef = useRef(null);
 
+  // 首次加载：先获取 features，再决定 view 是否允许，并加载热榜
   useEffect(() => {
-    if (didFetchRef.current) return;
-    didFetchRef.current = true;
-    fetchAllNews();
+    const init = async () => {
+      const f = await getFeatures();
+      setFeatures(f || {});
+
+      // view 校验：若当前 view 不可用，则回退 hotnews，并清理 URL
+      const v = getViewFromUrl();
+      const def = VIEW_DEFS.find(x => x.key === v);
+      const ok = def ? (def.featureKey ? !!(f && f[def.featureKey]) : true) : false;
+
+      if (!ok) {
+        setView('hotnews');
+      } else {
+        // 若可用，允许通过 URL 直达
+        setView(v);
+      }
+
+      if (!ok) {
+        try {
+          const url = new URL(window.location);
+          url.searchParams.delete('view');
+          window.history.replaceState({ view: 'hotnews' }, '', url);
+        } catch {
+          // ignore
+        }
+      }
+
+      if (didFetchRef.current) return;
+      didFetchRef.current = true;
+      fetchAllNews();
+    };
+
+    init();
   }, []);
 
   // 动态注入 51LA 挂件脚本（React 里直接写 <script> 往往不会执行）
@@ -468,8 +568,6 @@ function App() {
     }
   };
 
-
-
   const clearFavorites = () => setFavoriteMap({});
 
   const favoriteList = useMemo(() => {
@@ -603,6 +701,14 @@ function App() {
         <div className="logo">
           <img className="logo-img" src={AneiangLogo} alt="Aneiang" />
           <h1>热榜聚合</h1>
+
+          {availableViews.length > 1 && (
+            <Segmented
+              value={view}
+              onChange={handleViewChange}
+              options={availableViews.map(v => ({ label: v.label, value: v.key }))}
+            />
+          )}
         </div>
 
         {/* 桌面端：原来的导航 */}
@@ -628,7 +734,6 @@ function App() {
               />
             </Tooltip>
 
-
             <Tooltip title="复制当前筛选链接">
               <Button type="default" icon={<CopyOutlined />} onClick={copyFilterLink} />
             </Tooltip>
@@ -642,7 +747,7 @@ function App() {
             </Tooltip>
 
             <Tooltip title="收藏">
-              <Badge count={favoriteCount} size="small" offset={[ -2, 2 ]}>
+              <Badge count={favoriteCount} size="small" offset={[-2, 2]}>
                 <Button type="default" icon={<BookOutlined />} onClick={() => setFavOpen(true)} />
               </Badge>
             </Tooltip>
@@ -735,13 +840,6 @@ function App() {
                         return;
                       }
 
-                      await copySnapshot({
-                        title: 'Aneiang 热榜聚合 · 页面快照',
-                        items: [],
-                        updatedTime: null,
-                        limit: 0,
-                      });
-                      // 上面 copySnapshot 会生成空模板，所以这里直接复制 chunks
                       const text = `${chunks.join('\n\n')}\n\n---\n来自：${location.href}`;
                       try {
                         await navigator.clipboard.writeText(text);
@@ -784,203 +882,207 @@ function App() {
       </header>
 
       <main className="app-main">
-        {(() => {
-          if (isFirstLoading) {
-            return (
-              <div className="spin-container">
-                <Spin size="large" />
-              </div>
-            );
-          }
-
-          const q = query.trim().toLowerCase();
-
-          const cards = displaySources.map(src => {
-            const block = newsBySource[src];
-            const status = block?.status || 'loading';
-            const news = block?.list;
-            const updatedTime = block?.updatedTime;
-            const errorMsg = block?.error;
-            const filtered = q
-              ? (news || []).filter(n => (n?.title || '').toLowerCase().includes(q))
-              : news;
-
-            return {
-              src,
-              status,
-              news,
-              updatedTime,
-              errorMsg,
-              filtered,
-              title: getChineseSourceName(src),
-            };
-          });
-
-          // 搜索中：若所有“成功卡片”都无匹配（且至少有一个成功卡片），则显示友好空状态
-          if (q) {
-            const successCards = cards.filter(x => x.status === 'success');
-            const hasAnyMatch = successCards.some(x => (x.filtered?.length ?? 0) > 0);
-
-            if (successCards.length > 0 && !hasAnyMatch) {
+        {view === 'llm' && isFeatureEnabled('llmRanking') ? (
+          <LlmRanking />
+        ) : (
+          (() => {
+            if (isFirstLoading) {
               return (
-                <div style={{ padding: '60px 0' }}>
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={
-                      <div>
-                        <div style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 6 }}>
-                          没有找到与“{query.trim()}”相关的内容
-                        </div>
-                        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                          试试更换关键词，或清空搜索
-                        </div>
-                      </div>
-                    }
-                  />
+                <div className="spin-container">
+                  <Spin size="large" />
                 </div>
               );
             }
-          }
 
-          return (
-            <div className="news-grid">
-              {cards
-                // 搜索时：只展示“有匹配数据”的卡片（避免一堆空卡片）
-                .filter(x => (q ? x.status !== 'success' || (x.filtered?.length ?? 0) > 0 : true))
-                .map(({ src, status, news, updatedTime, errorMsg, filtered, title }) => {
-                  return (
-                    <Card
-                      key={src}
-                      title={title}
-                      extra={
-                        <span className="card-extra">
-                          {status === 'error' ? (
-                            <Tooltip title={errorMsg || '加载失败'}>
-                              <span className="card-error-label">加载失败</span>
-                            </Tooltip>
-                          ) : updatedTime ? (
-                            <span className="card-updated" title={getFullTimeString(updatedTime)}>
-                              {formatTime(updatedTime)}
-                            </span>
-                          ) : null}
+            const q = query.trim().toLowerCase();
 
-                          {q && status === 'success' ? (
-                            <span className="card-extra-count">{`${filtered.length} / ${(news || []).length}`}</span>
-                          ) : null}
+            const cards = displaySources.map(src => {
+              const block = newsBySource[src];
+              const status = block?.status || 'loading';
+              const news = block?.list;
+              const updatedTime = block?.updatedTime;
+              const errorMsg = block?.error;
+              const filtered = q
+                ? (news || []).filter(n => (n?.title || '').toLowerCase().includes(q))
+                : news;
 
-                          {status === 'success' && (
-                            <Space size={2}>
-                              <Tooltip title="复制快照">
-                                <Button
-                                  type="text"
-                                  size="small"
-                                  className="card-action-btn"
-                                  icon={<CopyOutlined />}
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    copySnapshot({
-                                      title,
-                                      items: news,
-                                      updatedTime,
-                                    });
-                                  }}
-                                />
-                              </Tooltip>
+              return {
+                src,
+                status,
+                news,
+                updatedTime,
+                errorMsg,
+                filtered,
+                title: getChineseSourceName(src),
+              };
+            });
 
-                              <Tooltip title="生成海报">
-                                <Button
-                                  type="text"
-                                  size="small"
-                                  className="card-action-btn"
-                                  icon={<ShareAltOutlined />}
-                                  loading={isGeneratingPoster}
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    generatePoster(src, news || [], updatedTime);
-                                  }}
-                                />
-                              </Tooltip>
-                            </Space>
-                          )}
-                        </span>
-                      }
-                      className={`source-card status-${status}`}
-                      data-source={src.toLowerCase()}
-                    >
-                      {status === 'error' ? (
-                        <div className="card-state-body">
-                          <div className="card-error-visual" aria-hidden="true">
-                            <img className="card-error-img" src="/error.svg" alt="" />
+            // 搜索中：若所有“成功卡片”都无匹配（且至少有一个成功卡片），则显示友好空状态
+            if (q) {
+              const successCards = cards.filter(x => x.status === 'success');
+              const hasAnyMatch = successCards.some(x => (x.filtered?.length ?? 0) > 0);
+
+              if (successCards.length > 0 && !hasAnyMatch) {
+                return (
+                  <div style={{ padding: '60px 0' }}>
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={
+                        <div>
+                          <div style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 6 }}>
+                            没有找到与“{query.trim()}”相关的内容
                           </div>
-
-                          <div className="card-error-text">加载失败</div>
-
-                          <div className="card-error-actions">
-                            <Button size="small" icon={<SyncOutlined />} onClick={() => retrySource(src)}>
-                              重试该来源
-                            </Button>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                            试试更换关键词，或清空搜索
                           </div>
-
-                          <div className="card-error-hint">提示：可能是接口限流/网络波动，稍等片刻再试。</div>
                         </div>
-                      ) : status === 'success' ? (
-                        filtered?.length ? (
-                          <List
-                            className="news-list"
-                            dataSource={filtered}
-                            renderItem={(item, idx) => (
-                              <List.Item>
-                                <span className="news-rank">{idx + 1}</span>
+                      }
+                    />
+                  </div>
+                );
+              }
+            }
 
-                                <Tooltip
-                                  title={item.title}
-                                  placement="topLeft"
-                                  mouseEnterDelay={0.2}
-                                  overlayClassName="news-title-tooltip"
-                                >
-                                  <a
-                                    href={item.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={readSet.has(item.url) ? 'is-read' : ''}
-                                    onClick={() => markAsRead(item.url)}
-                                  >
-                                    {highlightText(item.title, query)}
-                                  </a>
+            return (
+              <div className="news-grid">
+                {cards
+                  // 搜索时：只展示“有匹配数据”的卡片（避免一堆空卡片）
+                  .filter(x => (q ? x.status !== 'success' || (x.filtered?.length ?? 0) > 0 : true))
+                  .map(({ src, status, news, updatedTime, errorMsg, filtered, title }) => {
+                    return (
+                      <Card
+                        key={src}
+                        title={title}
+                        extra={
+                          <span className="card-extra">
+                            {status === 'error' ? (
+                              <Tooltip title={errorMsg || '加载失败'}>
+                                <span className="card-error-label">加载失败</span>
+                              </Tooltip>
+                            ) : updatedTime ? (
+                              <span className="card-updated" title={getFullTimeString(updatedTime)}>
+                                {formatTime(updatedTime)}
+                              </span>
+                            ) : null}
+
+                            {q && status === 'success' ? (
+                              <span className="card-extra-count">{`${filtered.length} / ${(news || []).length}`}</span>
+                            ) : null}
+
+                            {status === 'success' && (
+                              <Space size={2}>
+                                <Tooltip title="复制快照">
+                                  <Button
+                                    type="text"
+                                    size="small"
+                                    className="card-action-btn"
+                                    icon={<CopyOutlined />}
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      copySnapshot({
+                                        title,
+                                        items: news,
+                                        updatedTime,
+                                      });
+                                    }}
+                                  />
                                 </Tooltip>
 
-                                <button
-                                  type="button"
-                                  className={isFavorited(item.url) ? 'fav-btn is-fav' : 'fav-btn'}
-                                  title={isFavorited(item.url) ? '取消收藏' : '收藏'}
-                                  onClick={e => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    toggleFavorite(item, src);
-                                  }}
-                                >
-                                  {isFavorited(item.url) ? <StarFilled /> : <StarOutlined />}
-                                </button>
-                              </List.Item>
+                                <Tooltip title="生成海报">
+                                  <Button
+                                    type="text"
+                                    size="small"
+                                    className="card-action-btn"
+                                    icon={<ShareAltOutlined />}
+                                    loading={isGeneratingPoster}
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      generatePoster(src, news || [], updatedTime);
+                                    }}
+                                  />
+                                </Tooltip>
+                              </Space>
                             )}
-                          />
+                          </span>
+                        }
+                        className={`source-card status-${status}`}
+                        data-source={src.toLowerCase()}
+                      >
+                        {status === 'error' ? (
+                          <div className="card-state-body">
+                            <div className="card-error-visual" aria-hidden="true">
+                              <img className="card-error-img" src="/error.svg" alt="" />
+                            </div>
+
+                            <div className="card-error-text">加载失败</div>
+
+                            <div className="card-error-actions">
+                              <Button size="small" icon={<SyncOutlined />} onClick={() => retrySource(src)}>
+                                重试该来源
+                              </Button>
+                            </div>
+
+                            <div className="card-error-hint">提示：可能是接口限流/网络波动，稍等片刻再试。</div>
+                          </div>
+                        ) : status === 'success' ? (
+                          filtered?.length ? (
+                            <List
+                              className="news-list"
+                              dataSource={filtered}
+                              renderItem={(item, idx) => (
+                                <List.Item>
+                                  <span className="news-rank">{idx + 1}</span>
+
+                                  <Tooltip
+                                    title={item.title}
+                                    placement="topLeft"
+                                    mouseEnterDelay={0.2}
+                                    overlayClassName="news-title-tooltip"
+                                  >
+                                    <a
+                                      href={item.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={readSet.has(item.url) ? 'is-read' : ''}
+                                      onClick={() => markAsRead(item.url)}
+                                    >
+                                      {highlightText(item.title, query)}
+                                    </a>
+                                  </Tooltip>
+
+                                  <button
+                                    type="button"
+                                    className={isFavorited(item.url) ? 'fav-btn is-fav' : 'fav-btn'}
+                                    title={isFavorited(item.url) ? '取消收藏' : '收藏'}
+                                    onClick={e => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      toggleFavorite(item, src);
+                                    }}
+                                  >
+                                    {isFavorited(item.url) ? <StarFilled /> : <StarOutlined />}
+                                  </button>
+                                </List.Item>
+                              )}
+                            />
+                          ) : (
+                            <div className="card-state-body">
+                              <Empty description={q ? '没有匹配结果' : '暂无数据'} />
+                            </div>
+                          )
                         ) : (
                           <div className="card-state-body">
-                            <Empty description={q ? '没有匹配结果' : '暂无数据'} />
+                            <Spin size="small" />
+                            <span style={{ marginLeft: 8, color: 'var(--text-secondary)' }}>加载中...</span>
                           </div>
-                        )
-                      ) : (
-                        <div className="card-state-body">
-                          <Spin size="small" />
-                          <span style={{ marginLeft: 8, color: 'var(--text-secondary)' }}>加载中...</span>
-                        </div>
-                      )}
-                    </Card>
-                  );
-                })}
-            </div>
-          );
-        })()}
+                        )}
+                      </Card>
+                    );
+                  })}
+              </div>
+            );
+          })()
+        )}
       </main>
 
       {/* 来源管理 Drawer */}
@@ -1135,8 +1237,6 @@ function App() {
                     >
                       <StarFilled />
                     </button>
-
-
                   </List.Item>
                 )}
               />

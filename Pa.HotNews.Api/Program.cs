@@ -48,6 +48,14 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
+
+// HttpClient + 内存缓存（用于第三方 LLM 排行接口代理与 24h 缓存）
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient("ArtificialAnalysis", client =>
+{
+    client.BaseAddress = new Uri("https://artificialanalysis.ai/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
