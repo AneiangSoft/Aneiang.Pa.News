@@ -11,9 +11,9 @@ const Poster = forwardRef(function Poster(
     title,
     updatedTimeText,
     items = [],
-    siteText = 'news.aneiang.com',
+    siteText,
     theme = 'dark',
-    qrText = 'https://news.aneiang.com/',
+    qrText,
   },
   ref
 ) {
@@ -91,7 +91,7 @@ const Poster = forwardRef(function Poster(
 
   const [qrDataUrl, setQrDataUrl] = useState('');
 
-  const effectiveQrText = useMemo(() => (qrText || '').trim() || 'https://news.aneiang.com/', [qrText]);
+  const effectiveQrText = useMemo(() => (qrText || '').trim(), [qrText]);
 
   useEffect(() => {
     let cancelled = false;

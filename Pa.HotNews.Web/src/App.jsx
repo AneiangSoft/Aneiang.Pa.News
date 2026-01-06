@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-// 站点线上域名（用于生成分享链接）。开发环境也可正常用 location.origin。
-const SITE_ORIGIN = 'https://news.aneiang.com';
 
 import Poster from './components/Poster';
 import LogoDark from './assets/logo-dark.svg';
 import LogoLight from './assets/logo-light.svg';
 import LogoWarm from './assets/logo-warm.svg';
 import { nodeToPngBlob, downloadBlob } from './utils/poster';
+import { getSiteOrigin, getSiteHost, toAbsoluteUrl } from './utils/site';
 import { Grid } from 'antd';
 import {
   Spin,
@@ -55,6 +54,7 @@ import { highlightText } from './utils/highlight';
 import { quickShare } from './utils/share';
 import { generateSnapshot } from './utils/snapshot';
 import { updateSeo } from './utils/seo';
+import { getSiteConfig } from './services/siteConfig';
 import './App.css';
 
 // 英文源名 -> 中文展示名
@@ -328,6 +328,21 @@ function App() {
   // 首次加载：先获取 features，再决定 view 是否允许，并加载热榜
   useEffect(() => {
     const init = async () => {
+      // 站点配置（不阻塞主流程；失败时降级为默认）
+      try {
+        const cfg = await getSiteConfig();
+        setSiteCfg(cfg || {});
+
+        // 动态浏览器标题：Title + 可选后缀（默认后缀：" - 全网热点实时聚合"）
+        if (cfg?.title && String(cfg.title).trim()) {
+          const base = String(cfg.title).trim();
+          const suffix = (cfg?.titleSuffix && String(cfg.titleSuffix)) || ' - 全网热点实时聚合';
+          document.title = `${base}${suffix}`;
+        }
+      } catch {
+        // ignore
+      }
+
       const f = await getFeatures();
       setFeatures(f || {});
 
@@ -451,6 +466,9 @@ function App() {
 
   // 移动端：导航下拉菜单
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // 站点配置（页脚等）
+  const [siteCfg, setSiteCfg] = useState({});
 
   // 海报生成
   const posterRef = useRef(null);
@@ -656,7 +674,7 @@ function App() {
   }, [allSources, hiddenSet, sourceCfg.order, sourceWhitelist]);
 
   const buildShareUrl = () => {
-    const origin = location.origin.includes('localhost') ? SITE_ORIGIN : location.origin;
+    const origin = getSiteOrigin();
     const url = new URL(origin + location.pathname);
 
     const q = query.trim();
@@ -706,7 +724,7 @@ function App() {
             src={{ dark: LogoDark, light: LogoLight, warm: LogoWarm }[theme]}
             alt="热榜聚合 Logo"
           />
-          <h1>热榜聚合</h1>
+          <h1>{siteCfg?.title || '热榜聚合'}</h1>
 
           {availableViews.length > 1 && (
             <Segmented
@@ -1254,10 +1272,14 @@ function App() {
       {/* Footer */}
       <footer className="app-footer">
         <div className="footer-inner">
-          <span>备案号：湘ICP备2023022000号-2</span>
-          <span className="footer-sep">·</span>
+          {siteCfg?.icpLicense ? <span>备案号：{siteCfg.icpLicense}</span> : null}
+
+          {siteCfg?.icpLicense ? <span className="footer-sep">·</span> : null}
+
           <span>版权：AneiangSoft © {new Date().getFullYear()}</span>
+
           <span className="footer-sep">·</span>
+
           <a href="https://github.com/AneiangSoft/Aneiang.Pa" target="_blank" rel="noopener noreferrer">
             GitHub
           </a>
@@ -1284,9 +1306,9 @@ function App() {
             title={posterData.title}
             items={posterData.items}
             updatedTimeText={posterData.updatedTime ? getFullTimeString(posterData.updatedTime) : ''}
-            siteText="news.aneiang.com"
+            siteText={getSiteHost()}
             theme={theme}
-            qrText="https://news.aneiang.com/"
+            qrText={toAbsoluteUrl('/')}
           />
         )}
       </div>

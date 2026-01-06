@@ -10,7 +10,7 @@
       name="description"
       content="Aneiang 热榜聚合：实时汇总知乎、微博、抖音、头条、B站、掘金、GitHub 等全网热榜，支持搜索、收藏与主题切换。"
     />
-    <link rel="canonical" href="https://news.aneiang.com/" />
+    <link id="canonical-link" rel="canonical" href="/" />
 
     <!-- Icons / PWA -->
     <link rel="icon" type="image/svg+xml" href="/src/assets/logo-dark.svg" />
@@ -20,7 +20,7 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://news.aneiang.com/" />
+    <meta id="og-url" property="og:url" content="/" />
     <meta property="og:title" content="Aneiang 热榜聚合 - 全网热点实时聚合" />
     <meta
       property="og:description"
@@ -28,7 +28,7 @@
     />
     <meta property="og:site_name" content="Aneiang 热榜聚合" />
     <meta property="og:locale" content="zh_CN" />
-    <meta property="og:image" content="https://news.aneiang.com/og.svg" />
+    <meta id="og-image" property="og:image" content="/og.svg" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -37,28 +37,10 @@
       name="twitter:description"
       content="实时汇总知乎、微博、抖音、头条、B站、掘金、GitHub 等全网热榜，支持搜索、收藏与主题切换。"
     />
-    <meta name="twitter:image" content="https://news.aneiang.com/og.svg" />
+    <meta id="twitter-image" name="twitter:image" content="/og.svg" />
 
     <!-- Structured Data (JSON-LD) -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Aneiang 热榜聚合",
-        "url": "https://news.aneiang.com/",
-        "description": "实时汇总知乎、微博、抖音、头条、B站、掘金、GitHub 等全网热榜，支持搜索、收藏与主题切换。",
-        "publisher": {
-          "@type": "Organization",
-          "name": "AneiangSoft",
-          "url": "https://news.aneiang.com/"
-        },
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://news.aneiang.com/?q={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
-      }
-    </script>
+    <script id="json-ld-structured-data" type="application/ld+json"></script>
 
     <!-- Robots -->
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
