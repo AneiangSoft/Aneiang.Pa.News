@@ -78,12 +78,14 @@ docker compose down
 
 ## 截图
 
-| 预览 |
-| --- |
-| ![ScreenShot_2026-01-04_114410_940](./docments/ScreenShot_2026-01-04_114410_940.png) |
-| ![ScreenShot_2026-01-04_120819_009](./docments/ScreenShot_2026-01-04_120819_009.png) |
-| ![ScreenShot_2026-01-04_120855_967](./docments/ScreenShot_2026-01-04_120855_967.png) |
-| ![ScreenShot_2026-01-04_120913_719](./docments/ScreenShot_2026-01-04_120913_719.png) |
+> 点击图片可查看大图
+
+| | |
+|---|---|
+| [![预览](./docments/ScreenShot_2026-01-04_114410_940.png)](./docments/ScreenShot_2026-01-04_114410_940.png) | [![预览](./docments/ScreenShot_2026-01-04_120819_009.png)](./docments/ScreenShot_2026-01-04_120819_009.png) |
+| [![预览](./docments/ScreenShot_2026-01-04_120855_967.png)](./docments/ScreenShot_2026-01-04_120855_967.png) | [![预览](./docments/ScreenShot_2026-01-04_120913_719.png)](./docments/ScreenShot_2026-01-04_120913_719.png) |
+| [![预览](./docments/ScreenShot_2026-01-06_152216_843.png)](./docments/ScreenShot_2026-01-06_152216_843.png) | [![预览](./docments/ScreenShot_2026-01-06_152257_133.png)](./docments/ScreenShot_2026-01-06_152257_133.png) |
+| [![预览](./docments/ScreenShot_2026-01-06_152321_913.png)](./docments/ScreenShot_2026-01-06_152321_913.png) |  |
 
 ---
 
@@ -105,6 +107,100 @@ docker run -d --name aneiang-pa-news \
   -e HotNews__CacheSeconds=300 \
   caco/aneiang-pa-news:1.0.3
 ```
+
+### 大模型排行榜（可选功能）
+
+项目支持“大语言模型排行榜”页面（数据来源：<https://artificialanalysis.ai/>）。
+
+- **默认关闭**：当未配置 `LlmRanking:ApiKey` 时，前端不会展示“大模型”入口，也无法通过 `?view=llm` 进入。
+- **启用方式**：在后端配置 `LlmRanking:ApiKey` 后自动开启。
+
+#### 配置项
+
+- `LlmRanking:ApiKey`：ArtificialAnalysis 的 API Key（请勿提交到仓库）
+
+#### 缓存策略
+
+后端会对第三方接口结果做 **24 小时内存缓存**（IMemoryCache）。
+
+#### 通过 Docker 镜像启用（docker run）
+
+使用环境变量 `LlmRanking__ApiKey`（注意是双下划线 `__`）：
+
+```bash
+docker run -d --name aneiang-pa-news \
+  -p 5000:8080 \
+  -e ASPNETCORE_URLS=http://+:8080 \
+  -e ASPNETCORE_ENVIRONMENT=Production \
+  -e HotNews__EnableCache=true \
+  -e HotNews__CacheSeconds=1800 \
+  -e LlmRanking__ApiKey="你的_API_KEY_放这里" \
+  caco/aneiang-pa-news:1.0.3
+```
+
+#### 通过 Docker Compose 启用（从源码构建）
+
+在 `docker-compose.yml` 的 `environment` 中新增一行：
+
+```yaml
+- LlmRanking__ApiKey=你的_API_KEY_放这里
+```
+
+示例（片段，基于当前仓库 `docker-compose.yml`）：
+
+```yaml
+services:
+  hotnews:
+    image: caco/aneiang-pa-news:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aneiang-pa-news
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_ENVIRONMENT=Production
+      - HotNews__EnableCache=true
+      - HotNews__CacheSeconds=1800
+      - LlmRanking__ApiKey=你的_API_KEY_放这里
+```
+
+#### 启用后验证
+
+- 功能开关：`GET /api/features`（应返回 `{"llmRanking": true}`）
+- 前端直达：`/?view=llm`
+- 数据接口：`GET /api/llm-ranking/models`
+
+> 注意：容器需要能访问外网 `https://artificialanalysis.ai/`。
+
+---
+
+## 功能开关（Feature Flags）
+
+为方便后续扩展（例如新增更多功能页面/模块），项目提供统一的功能开关接口：
+
+- `GET /api/features`
+
+返回示例：
+
+```json
+{
+  "llmRanking": true
+}
+```
+
+前端会根据该接口返回值决定：
+
+- 是否展示对应入口（例如导航 Segmented 中的“大模型”）
+- 是否允许通过 URL 参数直接访问（例如 `?view=llm`）
+
+---
+
+## 前端访问方式
+
+- 热榜（默认）：`/`
+- 大模型排行榜：`/?view=llm`（需要 `llmRanking=true`）
 
 ---
 
