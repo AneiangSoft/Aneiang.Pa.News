@@ -1,0 +1,241 @@
+/* 大模型页面整体容器 */
+.llm-page {
+  padding: 16px 24px 28px;
+}
+
+@media (max-width: 768px) {
+  .llm-page {
+    padding: 12px 12px 20px;
+  }
+}
+
+/* 外层卡片：更像“榜单面板” */
+.llm-shell {
+  border-radius: 16px;
+  background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--primary) 16%, transparent) 0%,
+      transparent 60%
+    ),
+    color-mix(in srgb, var(--card-bg) 85%, transparent);
+  border: 1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+}
+
+/* 标题更清晰（尤其深色主题） */
+.llm-page h2 {
+  color: var(--text-primary);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme="light"] .llm-page h2 {
+  text-shadow: none;
+}
+
+/* ========== 统计区 ========== */
+.llm-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+/* 统计卡片：更明显 + 颜色区分（但阴影不过重） */
+.llm-stat-card {
+  --accent: var(--primary);
+
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--card-border));
+  background:
+    radial-gradient(
+      1100px 240px at 18% 0%,
+      color-mix(in srgb, var(--accent) 26%, transparent) 0%,
+      transparent 62%
+    ),
+    color-mix(in srgb, var(--bg-secondary) 68%, transparent);
+
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.llm-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--card-border));
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* 右上角装饰光点（跟随 accent 颜色） */
+.llm-stat-card::after {
+  content: '';
+  position: absolute;
+  top: -70px;
+  right: -90px;
+  width: 200px;
+  height: 200px;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at 30% 30%,
+    color-mix(in srgb, var(--accent) 30%, rgba(255, 255, 255, 0.22)) 0%,
+    transparent 60%
+  );
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* accent variants（默认 dark/light） */
+.llm-stat-card--gold { --accent: #faad14; }
+.llm-stat-card--green { --accent: #52c41a; }
+.llm-stat-card--blue { --accent: #1677ff; }
+.llm-stat-card--purple { --accent: #722ed1; }
+
+/* warm 主题：保留四色但整体偏暖、降低饱和度（避免刺眼蓝紫） */
+:root[data-theme="warm"] .llm-stat-card--gold { --accent: #d97706; }
+:root[data-theme="warm"] .llm-stat-card--green { --accent: #a3b18a; }
+:root[data-theme="warm"] .llm-stat-card--blue { --accent: #b08968; }
+:root[data-theme="warm"] .llm-stat-card--purple { --accent: #9d6b53; }
+
+/* light 主题：整体更干净，边框/阴影更轻 */
+:root[data-theme="light"] .llm-stat-card {
+  box-shadow:
+    0 6px 16px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+:root[data-theme="light"] .llm-stat-card:hover {
+  box-shadow:
+    0 10px 22px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+/* Statistic 文案：强制覆盖 antd 默认颜色，确保深色主题可读 */
+.llm-stat-card .ant-statistic-title {
+  color: var(--text-primary) !important;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+:root[data-theme="light"] .llm-stat-card .ant-statistic-title {
+  color: var(--text-secondary) !important;
+  letter-spacing: 0;
+}
+
+.llm-stat-card .ant-statistic-content-value {
+  color: var(--text-primary) !important;
+  font-weight: 800;
+}
+
+:root[data-theme="light"] .llm-stat-card .ant-statistic-content-value {
+  color: var(--text-primary) !important;
+}
+
+/* 让 prefix 图标也带点颜色 */
+.llm-stat-card .ant-statistic-content-prefix {
+  color: color-mix(in srgb, var(--accent) 85%, var(--text-primary)) !important;
+}
+
+/* ========== 表格 ========== */
+.llm-table-wrap {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--card-border) 70%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 45%, transparent);
+}
+
+/* light 主题下表格容器更白一些 */
+:root[data-theme="light"] .llm-table-wrap {
+  background: color-mix(in srgb, #ffffff 92%, transparent);
+  border-color: rgba(15, 23, 42, 0.10);
+}
+
+/* warm 主题下表格容器更偏暖 */
+:root[data-theme="warm"] .llm-table-wrap {
+  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+}
+
+/* 表头更清晰 */
+.llm-page .ant-table-thead > tr > th {
+  background: color-mix(in srgb, var(--primary) 10%, transparent) !important;
+  font-weight: 800;
+}
+
+:root[data-theme="light"] .llm-page .ant-table-thead > tr > th {
+  background: rgba(15, 23, 42, 0.04) !important;
+}
+
+:root[data-theme="warm"] .llm-page .ant-table-thead > tr > th {
+  background: color-mix(in srgb, var(--primary) 12%, transparent) !important;
+}
+
+/* 斑马纹（light/warm 下更柔和） */
+.llm-page .llm-row-alt td {
+  background: rgba(0, 0, 0, 0.02) !important;
+}
+
+:root[data-theme="light"] .llm-page .llm-row-alt td {
+  background: rgba(15, 23, 42, 0.02) !important;
+}
+
+:root[data-theme="warm"] .llm-page .llm-row-alt td {
+  background: rgba(217, 119, 6, 0.04) !important;
+}
+
+/* 行 hover 更柔和 */
+.llm-page .ant-table-tbody > tr:hover > td {
+  background: color-mix(in srgb, var(--primary) 8%, transparent) !important;
+}
+
+/* ========== 分页（与主题融合） ========== */
+.llm-page .ant-pagination {
+  margin-top: 14px;
+}
+
+.llm-page .ant-pagination-item,
+.llm-page .ant-pagination-prev,
+.llm-page .ant-pagination-next,
+.llm-page .ant-pagination-jump-prev,
+.llm-page .ant-pagination-jump-next {
+  border-radius: 10px;
+}
+
+.llm-page .ant-pagination-item a {
+  color: var(--text-primary);
+}
+
+.llm-page .ant-pagination-item-active {
+  border-color: color-mix(in srgb, var(--primary) 70%, transparent);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.llm-page .ant-pagination-item-active a {
+  color: var(--text-primary);
+}
+
+.llm-page .ant-pagination .ant-pagination-options-quick-jumper,
+.llm-page .ant-pagination .ant-pagination-options-size-changer {
+  color: var(--text-secondary);
+}
+
+.llm-page .ant-pagination .ant-select-selector,
+.llm-page .ant-pagination .ant-input {
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg-secondary) 75%, transparent);
+  border-color: color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  color: var(--text-primary);
+}
+
+:root[data-theme="light"] .llm-page .ant-pagination .ant-select-selector,
+:root[data-theme="light"] .llm-page .ant-pagination .ant-input {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 42, 0.16);
+  color: var(--text-primary);
+}
+
+.llm-page .ant-pagination .ant-select-arrow {
+  color: var(--text-secondary);
+}

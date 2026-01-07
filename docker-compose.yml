@@ -10,6 +10,3 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - ASPNETCORE_ENVIRONMENT=Production
-      # 接口响应缓存（默认 30 分钟 = 1800 秒）
-      - HotNews__EnableCache=true
-      - HotNews__CacheSeconds=1800

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="230 220 600 580" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="trend-gradient" x1="350" y1="720" x2="700" y2="450" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B82F6"/>
+      <stop offset="0.5" stop-color="#A855F7"/>
+      <stop offset="1" stop-color="#F43F5E"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="200%" height="200%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Icon: A newspaper with a rising trend graph on its front page -->
+  <g filter="url(#shadow)">
+    <!-- Newspaper back page (slightly visible) -->
+    <path d="M250 280 H 700 C 744.18 280, 780 315.82, 780 360 V 780 L 700 750 L 250 780 V 280 Z" fill="#0F1B33"/>
+    
+    <!-- Newspaper front page -->
+    <path d="M280 240 H 730 C 774.18 240, 810 275.82, 810 320 V 740 L 730 710 L 280 740 V 240 Z" 
+          fill="#1E293B" stroke="#243B63" stroke-width="10"/>
+
+    <!-- Headline placeholder -->
+    <rect x="320" y="300" width="300" height="32" rx="16" fill="#E5E7EB" opacity="0.9"/>
+    <rect x="320" y="350" width="180" height="20" rx="10" fill="#CBD5E1" opacity="0.7"/>
+
+    <!-- Rising Trend Line as the main content -->
+    <path d="M350 650 
+             L 450 520 
+             Q 480 480, 510 530 
+             L 600 400 
+             Q 630 360, 660 420
+             L 750 350" 
+          stroke="url(#trend-gradient)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    
+    <!-- Peak indicator on the trend line -->
+    <circle cx="750" cy="350" r="28" fill="#1E293B"/>
+    <circle cx="750" cy="350" r="16" fill="#F43F5E"/>
+
+    <!-- Bottom text placeholders -->
+    <rect x="350" y="680" width="380" height="16" rx="8" fill="#CBD5E1" opacity="0.4"/>
+  </g>
+</svg>

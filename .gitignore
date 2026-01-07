@@ -369,3 +369,4 @@ FodyWeavers.xsd
 /Pa.HotNews.Api/wwwroot/og.txt
 /Pa.HotNews.Api/wwwroot/site.webmanifest
 /Pa.HotNews.Api/wwwroot/vite.svg
+/owin-docker-compose.yml

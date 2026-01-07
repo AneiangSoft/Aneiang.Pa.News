@@ -4,6 +4,8 @@ import axios from 'axios';
 const apiClient = axios.create({
     // 统一使用同源相对路径：生产环境(一体化容器)与开发环境(配合 Vite proxy)都无需改代码
     baseURL: '/api/scraper/news',
+    // 避免请求长时间挂起导致单个来源卡片一直转圈
+    timeout: 60000,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -45,6 +47,24 @@ export const getNews = async (source, { bustCache = false } = {}) => {
         return response.data;
     } catch (error) {
         console.error(`Error fetching news for ${source}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * 获取大模型排行（调用我们自己的后端代理，不暴露第三方 x-api-key）
+ * @returns {Promise<object>}
+ */
+export const getLlmModelsRanking = async () => {
+    try {
+        const response = await axios.get('/api/llm-ranking/models', {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching llm models ranking:', error);
         throw error;
     }
 };
