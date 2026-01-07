@@ -218,28 +218,51 @@ function App() {
         return { order, hidden };
       });
 
-      const results = await Promise.allSettled(sources.map(getNews));
-      const data = {};
-      results.forEach((r, i) => {
-        const name = sources[i];
-        const key = name.toLowerCase();
+      // 方案 1：分来源独立加载（避免单个平台过慢导致整页一直 loading）
 
-        if (r.status === 'fulfilled' && r.value?.data) {
-          // 兼容后端返回：{ data: [], updatedTime: '...' } 或 { data: { items: [], updatedTime: '...' } }
-          const payload = r.value;
-          const list = Array.isArray(payload.data) ? payload.data : payload.data?.items || [];
-          const updatedTime = payload.updatedTime ?? payload.data?.updatedTime ?? payload.data?.updateTime;
-          data[key] = { status: 'success', list, updatedTime, error: null };
-        } else {
-          const errMsg = r.status === 'rejected' ? (r.reason?.message || '请求失败') : '返回数据为空';
-          data[key] = { status: 'error', list: [], updatedTime: null, error: errMsg };
+      // 1) 先把所有来源置为 loading，让页面先渲染出卡片
+      setNewsBySource(prev => {
+        const next = { ...prev };
+        for (const s of normalized) {
+          // 保留旧数据（可选）：刷新时不闪空
+          next[s] = {
+            status: 'loading',
+            list: next[s]?.list || [],
+            updatedTime: next[s]?.updatedTime ?? null,
+            error: null,
+          };
+        }
+        return next;
+      });
+
+      // 2) 立即结束“全局首屏 loading”，不再等待所有来源完成
+      setIsFirstLoading(false);
+
+      // 3) 每个来源独立请求，谁先回来先更新谁（互不阻塞）
+      normalized.forEach(async key => {
+        try {
+          const payload = await getNews(key);
+          const list = Array.isArray(payload?.data) ? payload.data : payload?.data?.items || [];
+          const updatedTime = payload?.updatedTime ?? payload?.data?.updatedTime ?? payload?.data?.updateTime;
+
+          setNewsBySource(prev => ({
+            ...prev,
+            [key]: { status: 'success', list, updatedTime, error: null },
+          }));
+        } catch (e) {
+          const errMsg = e?.message || '请求失败';
+          setNewsBySource(prev => ({
+            ...prev,
+            [key]: { status: 'error', list: [], updatedTime: null, error: errMsg },
+          }));
         }
       });
-      setNewsBySource(data);
     } catch (e) {
       message.error('获取新闻源失败', 3);
-    } finally {
+      // 兜底：失败也要结束首屏 loading
       setIsFirstLoading(false);
+    } finally {
+      // 方案 1 中首屏 loading 已在 sources 成功后立即关闭，这里避免重复 setState
     }
   };
 

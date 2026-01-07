@@ -4,6 +4,8 @@ import axios from 'axios';
 const apiClient = axios.create({
     // 统一使用同源相对路径：生产环境(一体化容器)与开发环境(配合 Vite proxy)都无需改代码
     baseURL: '/api/scraper/news',
+    // 避免请求长时间挂起导致单个来源卡片一直转圈
+    timeout: 60000,
     headers: {
         'Content-Type': 'application/json',
     },

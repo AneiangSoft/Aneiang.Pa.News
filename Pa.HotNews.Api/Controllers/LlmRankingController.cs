@@ -1,7 +1,9 @@
-using System.Net.Http.Headers;
+using Aneiang.Pa.AspNetCore.Caching;
+using Aneiang.Pa.AspNetCore.Options;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using Serilog;
+using System.Net.Http.Headers;
 
 namespace Pa.HotNews.Api.Controllers;
 
@@ -10,20 +12,21 @@ namespace Pa.HotNews.Api.Controllers;
 public sealed class LlmRankingController : ControllerBase
 {
     private const string CacheKeyModels = "llm-ranking:models:v1";
-    private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(24);
-
+    private readonly ScraperControllerOptions _options;
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IMemoryCache _cache;
     private readonly IConfiguration _configuration;
+    private readonly ICacheService _cache;
 
     public LlmRankingController(
         IHttpClientFactory httpClientFactory,
-        IMemoryCache cache,
-        IConfiguration configuration)
+        ICacheService cache,
+        IConfiguration configuration,
+        IOptions<ScraperControllerOptions> options)
     {
         _httpClientFactory = httpClientFactory;
         _cache = cache;
         _configuration = configuration;
+        _options = options?.Value ?? new ScraperControllerOptions();
     }
 
     /// <summary>
@@ -50,56 +53,46 @@ public sealed class LlmRankingController : ControllerBase
             return StatusCode(StatusCodes.Status424FailedDependency, new { message = "功能未配置", detail = "LlmRanking:ApiKey is not configured on the server." });
         }
 
-        // 优先从缓存读取
-        if (_cache.TryGetValue(CacheKeyModels, out string? cached) && !string.IsNullOrWhiteSpace(cached))
+        var result = await _cache.GetOrCreateAsync(CacheKeyModels, async () =>
         {
-            return Content(cached, "application/json");
-        }
-
-        try
-        {
-            var client = _httpClientFactory.CreateClient("ArtificialAnalysis");
-
-            using var req = new HttpRequestMessage(HttpMethod.Get, "api/v2/data/llms/models");
-            req.Headers.Add("x-api-key", apiKey);
-            req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            var body = await resp.Content.ReadAsStringAsync(cancellationToken);
-
-            if (!resp.IsSuccessStatusCode)
+            try
             {
+                var client = _httpClientFactory.CreateClient("ArtificialAnalysis");
+                using var req = new HttpRequestMessage(HttpMethod.Get, "api/v2/data/llms/models");
+                req.Headers.Add("x-api-key", apiKey);
+                req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                using var resp = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                var body = await resp.Content.ReadAsStringAsync(cancellationToken);
+                if (resp.IsSuccessStatusCode) return body;
                 Log.Warning("LLM Ranking upstream failed. Status={StatusCode}, Body={Body}", (int)resp.StatusCode, body);
-                return StatusCode((int)resp.StatusCode, new { message = "上游接口返回错误", upstreamStatus = (int)resp.StatusCode, upstreamBody = body });
+                return null;
             }
-
-            // 写入缓存
-            _cache.Set(CacheKeyModels, body, new MemoryCacheEntryOptions
+            catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
             {
-                AbsoluteExpirationRelativeToNow = CacheTtl
-            });
-
-            return Content(body, "application/json");
-        }
-        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+                Log.Warning(ex, "LLM Ranking upstream timeout");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "LLM Ranking proxy error");
+                return null;
+            }
+        }, TimeSpan.FromDays(1));
+        if (result == null)
         {
-            Log.Warning(ex, "LLM Ranking upstream timeout");
-            return StatusCode(StatusCodes.Status504GatewayTimeout, new { message = "上游接口超时" });
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "LLM Ranking proxy error");
             return StatusCode(StatusCodes.Status502BadGateway, new { message = "获取大模型排行失败" });
         }
+        return Content(result, "application/json");
     }
 
     /// <summary>
     /// 手动刷新缓存（可选：用于调试/运维）
     /// </summary>
     [HttpPost("models/refresh")]
-    public IActionResult RefreshModels()
+    public async Task<IActionResult> RefreshModels()
     {
-        _cache.Remove(CacheKeyModels);
+        await _cache.RemoveAsync(CacheKeyModels);
         return Ok(new { message = "缓存已清除" });
     }
 }

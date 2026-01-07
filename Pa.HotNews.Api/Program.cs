@@ -66,43 +66,44 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddNewsScraper(builder.Configuration);
 builder.Services.AddLotteryScraper();
 
-// 读取可配置的缓存参数（支持 appsettings.json / 环境变量覆盖）
-// 环境变量示例：
-//   HOTNEWS_CACHE_SECONDS=1800
-//   HOTNEWS_ENABLE_CACHE=true
-// 或使用 .NET 配置层级：
-//   HotNews__CacheSeconds=1800
-//   HotNews__EnableCache=true
-var cacheSeconds = builder.Configuration.GetValue<int?>("HotNews:CacheSeconds")
-                   ?? builder.Configuration.GetValue<int?>("HOTNEWS_CACHE_SECONDS")
-                   ?? 3600;
-var enableCache = builder.Configuration.GetValue<bool?>("HotNews:EnableCache")
-                  ?? builder.Configuration.GetValue<bool?>("HOTNEWS_ENABLE_CACHE")
-                  ?? true;
-
 // Add and configure the ScraperController from Aneiang.Pa.AspNetCore
-builder.Services.AddScraperController(options =>
-{
-    options.RoutePrefix = "api/scraper"; // Set a specific route prefix for news
-    options.UseLowercaseInRoute = true;
-    options.EnableResponseCaching = enableCache; // Enable response caching for performance
-    options.CacheDurationSeconds = cacheSeconds; // 缓存秒数（可配置）
-});
+builder.Services.AddPaScraperApi(builder.Configuration).AddPaScraperAuthorization(builder.Configuration);
 
 var app = builder.Build();
 
-// 启动日志：输出基础运行配置，便于排查部署问题
-Log.Information("===== Aneiang.Pa.News (HotNews) Startup =====");
-Log.Information("Environment: {EnvironmentName}", app.Environment.EnvironmentName);
-Log.Information("ContentRoot: {ContentRoot}", app.Environment.ContentRootPath);
-Log.Information("WebRoot: {WebRoot}", app.Environment.WebRootPath);
-Log.Information("Cache Enabled: {EnableCache}", enableCache);
-Log.Information("Cache Seconds: {CacheSeconds}", cacheSeconds);
-Log.Information("API Route Prefix: /{RoutePrefix}", "api/scraper");
-Log.Information("ASPNETCORE_URLS: {Urls}", builder.Configuration["ASPNETCORE_URLS"] ?? "(not set)");
-Log.Information("HTTPS Redirection Enabled: true");
-Log.Information("Swagger Enabled (Development only): {SwaggerEnabled}", app.Environment.IsDevelopment());
-Log.Information("============================================");
+// === Dump basic configuration on startup (Scraper:*, LlmRanking:*, Site:*) ===
+static string MaskSecret(string? value)
+{
+    if (string.IsNullOrWhiteSpace(value)) return "(empty)";
+    if (value.Length <= 6) return "***";
+    return value[..3] + "***" + value[^2..];
+}
+
+static void DumpSection(IConfiguration config, string sectionName)
+{
+    var section = config.GetSection(sectionName);
+    if (!section.Exists())
+    {
+        Log.Information("Config Section {Section} => (not exists)", sectionName);
+        return;
+    }
+
+    foreach (var kv in section.AsEnumerable().Where(x => x.Value != null))
+    {
+        var masked = kv.Key.Contains("key", StringComparison.OrdinalIgnoreCase)
+                     || kv.Key.Contains("secret", StringComparison.OrdinalIgnoreCase)
+                     || kv.Key.Contains("password", StringComparison.OrdinalIgnoreCase)
+                     || kv.Key.Contains("token", StringComparison.OrdinalIgnoreCase);
+
+        var v = masked ? MaskSecret(kv.Value) : kv.Value;
+        Log.Information("Config {Key} = {Value}", kv.Key, v);
+    }
+}
+
+Log.Information("ENV ASPNETCORE_ENVIRONMENT = {Env}", builder.Environment.EnvironmentName);
+DumpSection(builder.Configuration, "Scraper");
+DumpSection(builder.Configuration, "LlmRanking");
+DumpSection(builder.Configuration, "Site");
 
 // 3. Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -115,9 +116,6 @@ app.UseHttpsRedirection();
 
 // Enable CORS
 app.UseCors();
-
-// Enable Response Caching middleware
-app.UseResponseCaching();
 
 app.UseAuthorization();
 
