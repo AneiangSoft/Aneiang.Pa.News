@@ -76,19 +76,20 @@ graph TD
 
 ## 🚀 快速开始
 
-### 方式 A：直接使用 Docker 镜像（推荐，无需下载源码）
+### 方式 A：使用 Docker 部署（推荐）
 
-确保已安装 Docker：[安装指南](https://docs.docker.com/get-docker/)
+确保已安装 Docker 和 Docker Compose。
+
+#### 1. 使用 `docker run`
 
 ```bash
-# 拉取镜像（推荐使用固定版本）
-docker pull caco/aneiang-pa-news:1.0.3
+# 拉取最新镜像
+docker pull caco/aneiang-pa-news:1.0.4
 
-# 运行（默认端口 5000），并将日志挂载到宿主机（推荐）
-# - 容器内默认日志目录：/app/logs
-# - 宿主机日志目录：./logs（相对于当前命令执行目录）
+# 准备日志目录
 mkdir -p logs
 
+# 运行容器
 docker run -d --name aneiang-pa-news \
   -p 5000:8080 \
   -e ASPNETCORE_URLS=http://+:8080 \
@@ -96,13 +97,48 @@ docker run -d --name aneiang-pa-news \
   -e HotNews__EnableCache=true \
   -e HotNews__CacheSeconds=1800 \
   -v $(pwd)/logs:/app/logs \
-  caco/aneiang-pa-news:1.0.3
+  --restart unless-stopped \
+  caco/aneiang-pa-news:1.0.4
+```
+
+#### 2. 使用 `docker-compose`
+
+在项目根目录创建 `docker-compose.yml` 文件（或使用项目自带的文件）：
+
+```yaml
+services:
+  hotnews:
+    image: caco/aneiang-pa-news:1.0.4
+    container_name: aneiang-pa-news
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: "Production"
+      HotNews__EnableCache: "true"
+      HotNews__CacheSeconds: "1800"
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+```
+
+然后启动服务：
+
+```bash
+# 准备日志目录
+mkdir -p logs
+
+# 启动服务
+docker compose up -d
+
+# 更新服务（拉取新镜像并重启）
+# docker compose pull && docker compose up -d
 ```
 
 启动后：
 
 - Web 首页：`http://localhost:5000/`
-- API 文档：`http://localhost:5000/swagger`（开发环境）
+- API 文档：`http://localhost:5000/swagger`（仅当 `ASPNETCORE_ENVIRONMENT` 设置为 `Development` 时可用）
 
 ### 方式 B：从源码构建
 
