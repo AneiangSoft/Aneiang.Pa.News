@@ -39,6 +39,9 @@ Aneiang.Pa.News 是一个现代化的热点/热搜聚合平台，旨在为用户
 
 - 在线预览：[https://news.aneiang.com/](https://news.aneiang.com/)
 - Docker 镜像：`caco/aneiang-pa-news`（建议使用固定版本 tag，例如 `:1.0.5`）
+> PS:项目基于Aeniang.Pa爬虫库实现，有兴趣的小伙伴可以点击了解
+>- Github:https://github.com/AneiangSoft/Aneiang.Pa
+>- Gitee:https://gitee.com/AneiangSoft/Aneiang.Pa
 
 ## 🏗️ 系统架构
 
