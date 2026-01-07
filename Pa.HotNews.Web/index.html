@@ -13,8 +13,12 @@
     <link rel="canonical" href="https://news.aneiang.com/" />
 
     <!-- Icons / PWA -->
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <!-- 现代浏览器优先使用 SVG，旧环境/书签回退到 ICO/PNG -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
     <meta name="theme-color" content="#0b1220" />
     <meta name="application-name" content="Aneiang 热榜聚合" />
 

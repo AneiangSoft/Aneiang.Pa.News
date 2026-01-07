@@ -38,7 +38,7 @@ Aneiang.Pa.News 是一个现代化的热点/热搜聚合平台，旨在为用户
 ### 🚀 在线体验
 
 - 在线预览：[https://news.aneiang.com/](https://news.aneiang.com/)
-- Docker 镜像：`caco/aneiang-pa-news`（建议使用固定版本 tag，例如 `:1.0.2`）
+- Docker 镜像：`caco/aneiang-pa-news`（建议使用固定版本 tag，例如 `:1.0.5`）
 
 ## 🏗️ 系统架构
 
@@ -84,7 +84,7 @@ graph TD
 
 ```bash
 # 拉取最新镜像
-docker pull caco/aneiang-pa-news:1.0.4
+docker pull caco/aneiang-pa-news:1.0.5
 
 # 准备日志目录
 mkdir -p logs
@@ -98,25 +98,63 @@ docker run -d --name aneiang-pa-news \
   -e HotNews__CacheSeconds=1800 \
   -v $(pwd)/logs:/app/logs \
   --restart unless-stopped \
-  caco/aneiang-pa-news:1.0.4
+  caco/aneiang-pa-news:1.0.5
 ```
 
-#### 2. 使用 `docker-compose`
+#### 2. 使用 `docker compose`
 
-在项目根目录创建 `docker-compose.yml` 文件（或使用项目自带的文件）：
+仓库内提供了两份示例：
+- `docker-compose.yml`：简单版（默认内存缓存/兼容配置）
+- `owin-docker-compose.yml`：增强版（推荐：Redis 缓存 + 站点信息 + LLM 排行配置）
+
+**简单版（内存缓存）**：
 
 ```yaml
 services:
   hotnews:
-    image: caco/aneiang-pa-news:1.0.4
+    image: caco/aneiang-pa-news:1.0.5
     container_name: aneiang-pa-news
     ports:
       - "5000:8080"
     environment:
       ASPNETCORE_URLS: "http://+:8080"
       ASPNETCORE_ENVIRONMENT: "Production"
-      HotNews__EnableCache: "true"
-      HotNews__CacheSeconds: "1800"
+      Scraper__CacheProvider: "Memory"
+      Scraper__CacheDuration: "00:30:00"
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+```
+
+**增强版（Redis 缓存，推荐）**：
+
+> ⚠️ 注意：请把下面的 Redis 地址、密码、数据库等改成你自己的；建议不要把真实密码提交到公开仓库。
+
+```yaml
+services:
+  hotnews:
+    image: caco/aneiang-pa-news:1.0.5
+    container_name: aneiang-pa-news
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+      ASPNETCORE_ENVIRONMENT: "Production"
+
+      # 爬虫缓存（Redis）
+      Scraper__CacheProvider: "Redis"
+      Scraper__CacheDuration: "00:30:00"
+      Scraper__Redis__Configuration: "<redis-host>:6379,password=<redis-password>,defaultDatabase=3"
+      Scraper__Redis__InstanceName: "Aneiang.Pa:"
+
+      # 站点信息（页眉/页脚）
+      Site__Title: "Aneiang 热榜聚合"
+      Site__TitleSuffix: " - 全网热点实时聚合"
+      Site__IcpLicense: "湘ICP备2023022000号-2"
+
+      # 大模型排行榜（可选）
+      # LlmRanking__ApiKey: "<your-api-key>"
+
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped
@@ -217,13 +255,26 @@ pa-news/
 
 ### Docker 环境变量
 
-| 环境变量 | 说明 | 默认值 |
-|---------|------|--------|
+> 说明：项目同时支持两套缓存配置：
+> - `HotNews__*`：旧版/兼容配置（内存缓存）
+> - `Scraper__*`：新版爬虫缓存配置（支持 Redis）
+>
+> 如果你使用 `owin-docker-compose.yml`，推荐使用 `Scraper__* + Redis`（性能更好，支持多实例共享缓存）。
+
+| 环境变量 | 说明 | 示例/默认 |
+|---------|------|----------|
 | `ASPNETCORE_ENVIRONMENT` | 环境名称 | `Production` |
 | `ASPNETCORE_URLS` | 服务监听地址 | `http://+:8080` |
-| `HotNews__EnableCache` | 是否启用缓存 | `true` |
-| `HotNews__CacheSeconds` | 缓存时间(秒) | `1800` |
-| `LlmRanking__ApiKey` | 大模型API Key | 空 |
+| `Site__Title` | 站点标题 | `Aneiang 热榜聚合` |
+| `Site__TitleSuffix` | 标题后缀 | ` - 全网热点实时聚合` |
+| `Site__IcpLicense` | ICP 备案号（页脚展示） | `湘ICP备2023022000号-2` |
+| `LlmRanking__ApiKey` | 大模型排行榜 API Key | 空 |
+| `HotNews__EnableCache` | 是否启用缓存（兼容） | `true` |
+| `HotNews__CacheSeconds` | 缓存时间(秒)（兼容） | `1800` |
+| `Scraper__CacheProvider` | 爬虫缓存提供者 | `Redis` / `Memory` |
+| `Scraper__CacheDuration` | 爬虫缓存时长 | `00:30:00` |
+| `Scraper__Redis__Configuration` | Redis 连接串 | `host:6379,password=***,defaultDatabase=3`（支持更多参数） |
+| `Scraper__Redis__InstanceName` | Redis Key 前缀（命名空间） | `Aneiang.Pa:` |
 
 ## 🤝 贡献指南
 
