@@ -15,6 +15,8 @@ const Poster = forwardRef(function Poster(
     theme = 'dark',
     qrText,
     renderItem,
+    // 海报尺寸：默认按手机 9:16 设计（便于一屏预览 + 方便分享）
+    size = 'mobile', // mobile | wide
   },
   ref
 ) {
@@ -122,13 +124,61 @@ const Poster = forwardRef(function Poster(
 
   const topBadgeText = 'HOT';
 
+  const layout =
+    size === 'wide'
+      ? {
+          w: 760,
+          pad: 20,
+          radius: 18,
+          headerPad: 14,
+          headerRadius: 14,
+          logoBox: 46,
+          logoImg: 36,
+          titleSize: 24,
+          listTop: 12,
+          listGap: 8,
+          itemPad: '10px 12px',
+          itemRadius: 12,
+          rankBox: 28,
+          rankRadius: 9,
+          rankFont: 12,
+          footerTop: 14,
+          qrWrapPad: 10,
+          qrWrapRadius: 14,
+          qrBox: 84,
+          qrImg: 74,
+        }
+      : {
+          // mobile 9:16 (1080x1920 的等比缩小)
+          w: 540,
+          pad: 16,
+          radius: 18,
+          headerPad: 12,
+          headerRadius: 14,
+          logoBox: 42,
+          logoImg: 32,
+          titleSize: 22,
+          listTop: 10,
+          listGap: 8,
+          itemPad: '9px 10px',
+          itemRadius: 12,
+          rankBox: 26,
+          rankRadius: 9,
+          rankFont: 12,
+          footerTop: 12,
+          qrWrapPad: 10,
+          qrWrapRadius: 14,
+          qrBox: 78,
+          qrImg: 68,
+        };
+
   return (
     <div
       ref={ref}
       style={{
-        width: 860,
-        padding: 28,
-        borderRadius: 22,
+        width: layout.w,
+        padding: layout.pad,
+        borderRadius: layout.radius,
         background: `${themeTokens.noise}, ${themeTokens.bg}`,
         color: themeTokens.text,
         fontFamily:
@@ -140,19 +190,19 @@ const Poster = forwardRef(function Poster(
       {/* 顶部渐变横幅（海报感） */}
       <div
         style={{
-          borderRadius: 18,
-          padding: 18,
+          borderRadius: layout.headerRadius,
+          padding: layout.headerPad,
           background: themeTokens.headerGrad,
           border: `1px solid ${themeTokens.headerBorder}`,
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div
               style={{
-                width: 54,
-                height: 54,
-                borderRadius: 14,
+                width: layout.logoBox,
+                height: layout.logoBox,
+                borderRadius: 12,
                 background: themeTokens.card,
                 border: `1px solid ${themeTokens.border}`,
                 display: 'flex',
@@ -161,12 +211,18 @@ const Poster = forwardRef(function Poster(
                 flex: '0 0 auto',
               }}
             >
-              <img src={logoSrc} alt="logo" style={{ width: 42, height: 42, objectFit: 'contain' }} />
+              <img
+                src={logoSrc}
+                alt="logo"
+                style={{ width: layout.logoImg, height: layout.logoImg, objectFit: 'contain' }}
+              />
             </div>
 
-            <div>
+            <div style={{ minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <div style={{ fontSize: 28, fontWeight: 900, lineHeight: 1.15 }}>{title}</div>
+                <div style={{ fontSize: layout.titleSize, fontWeight: 900, lineHeight: 1.15 }}>
+                  {title}
+                </div>
                 <span
                   style={{
                     fontSize: 12,
@@ -183,26 +239,26 @@ const Poster = forwardRef(function Poster(
                 </span>
               </div>
 
-              <div style={{ marginTop: 8, fontSize: 13, color: themeTokens.sub }}>
+              <div style={{ marginTop: 6, fontSize: 12, color: themeTokens.sub }}>
                 {updatedTimeText ? `更新时间：${updatedTimeText}` : ''}
               </div>
             </div>
           </div>
 
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 13, color: themeTokens.sub }}>{siteText}</div>
-            <div style={{ marginTop: 8, fontSize: 12, color: themeTokens.sub, opacity: 0.9 }}>
+            <div style={{ fontSize: 12, color: themeTokens.sub }}>{siteText}</div>
+            <div style={{ marginTop: 6, fontSize: 11, color: themeTokens.sub, opacity: 0.9 }}>
               热榜 · 趋势 · 速览
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ marginTop: 16, height: 1, background: themeTokens.sep, opacity: 0.8 }} />
+      <div style={{ marginTop: layout.listTop, height: 1, background: themeTokens.sep, opacity: 0.8 }} />
 
       {/* 榜单卡片区 */}
-      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {items.slice(0, 10).map((it, idx) => {
+      <div style={{ marginTop: layout.listTop, display: 'flex', flexDirection: 'column', gap: layout.listGap }}>
+        {items.slice(0, size === 'mobile' ? 8 : 10).map((it, idx) => {
           const isTop3 = idx < 3;
           const rankBg = isTop3 ? themeTokens.topRankBg : themeTokens.rankBg;
           const rankText = isTop3 ? themeTokens.topRankText : themeTokens.rankText;
@@ -212,26 +268,26 @@ const Poster = forwardRef(function Poster(
               key={it.url || idx}
               style={{
                 display: 'flex',
-                gap: 12,
+                gap: 10,
                 alignItems: 'baseline',
-                padding: '12px 14px',
-                borderRadius: 14,
+                padding: layout.itemPad,
+                borderRadius: layout.itemRadius,
                 background: themeTokens.card,
                 border: `1px solid ${themeTokens.border}`,
               }}
             >
               <div
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 10,
+                  width: layout.rankBox,
+                  height: layout.rankBox,
+                  borderRadius: layout.rankRadius,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   background: rankBg,
                   color: rankText,
                   fontWeight: 900,
-                  fontSize: 13,
+                  fontSize: layout.rankFont,
                   flex: '0 0 auto',
                 }}
               >
@@ -243,8 +299,8 @@ const Poster = forwardRef(function Poster(
               ) : (
                 <div
                   style={{
-                    fontSize: 16,
-                    lineHeight: 1.38,
+                    fontSize: 14,
+                    lineHeight: 1.35,
                     fontWeight: 650,
                     wordBreak: 'break-word',
                   }}
@@ -260,36 +316,36 @@ const Poster = forwardRef(function Poster(
       {/* 底部信息区：二维码更适合手机 */}
       <div
         style={{
-          marginTop: 18,
+          marginTop: layout.footerTop,
           display: 'flex',
           justifyContent: 'space-between',
-          gap: 14,
+          gap: 12,
           alignItems: 'flex-end',
           flexWrap: 'wrap',
           color: themeTokens.sub,
-          fontSize: 12,
+          fontSize: 11,
         }}
       >
-        <div style={{ maxWidth: 560, lineHeight: 1.4 }}>
+        <div style={{ maxWidth: size === 'mobile' ? 320 : 460, lineHeight: 1.4 }}>
           提示：榜单数据来源于公开平台，仅供参考。
         </div>
 
         <div
           style={{
             display: 'flex',
-            gap: 12,
+            gap: 10,
             alignItems: 'center',
-            padding: 12,
-            borderRadius: 16,
+            padding: layout.qrWrapPad,
+            borderRadius: layout.qrWrapRadius,
             background: themeTokens.card,
             border: `1px solid ${themeTokens.border}`,
           }}
         >
           <div
             style={{
-              width: 96,
-              height: 96,
-              borderRadius: 16,
+              width: layout.qrBox,
+              height: layout.qrBox,
+              borderRadius: 14,
               background: '#ffffff',
               display: 'flex',
               alignItems: 'center',
@@ -299,15 +355,24 @@ const Poster = forwardRef(function Poster(
             }}
           >
             {qrDataUrl ? (
-              <img src={qrDataUrl} alt="qrcode" style={{ width: 86, height: 86 }} />
+              <img src={qrDataUrl} alt="qrcode" style={{ width: layout.qrImg, height: layout.qrImg }} />
             ) : (
               <div style={{ fontSize: 10, color: '#111827' }}>二维码生成失败</div>
             )}
           </div>
 
-          <div style={{ lineHeight: 1.2 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: themeTokens.text }}>手机扫码访问</div>
-            <div style={{ marginTop: 6, fontSize: 12, color: themeTokens.sub }}>{effectiveQrText}</div>
+          <div style={{ lineHeight: 1.2, maxWidth: size === 'mobile' ? 200 : 260 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: themeTokens.text }}>手机扫码访问</div>
+            <div
+              style={{
+                marginTop: 5,
+                fontSize: 11,
+                color: themeTokens.sub,
+                wordBreak: 'break-all',
+              }}
+            >
+              {effectiveQrText}
+            </div>
           </div>
         </div>
       </div>

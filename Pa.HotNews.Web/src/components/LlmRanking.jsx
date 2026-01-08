@@ -6,7 +6,6 @@ import {
   Divider,
   Grid,
   Input,
-  Modal,
   Segmented,
   Space,
   Spin,
@@ -19,7 +18,6 @@ import {
   CameraOutlined,
   ClockCircleOutlined,
   DollarOutlined,
-  DownloadOutlined,
   SearchOutlined,
   SyncOutlined,
   ThunderboltOutlined,
@@ -28,6 +26,7 @@ import {
 import { getLlmModelsRanking } from '../services/api';
 import { nodeToPngBlob, downloadBlob } from '../utils/poster';
 import Poster from './Poster';
+import PosterModal from './PosterModal';
 import './LlmRanking.css';
 
 const { useBreakpoint } = Grid;
@@ -579,54 +578,28 @@ const LlmRanking = ({ siteTitle, theme = 'dark' }) => {
         ) : null}
       </Card>
 
-      <Modal
+      <PosterModal
         open={posterVisible}
-        onCancel={() => setPosterVisible(false)}
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', paddingRight: 44 }}>
-            <span style={{ fontWeight: 600 }}>生成分享海报</span>
-            <div style={{ flex: 1 }} />
-            <Button
-              type="primary"
-              icon={<DownloadOutlined />}
-              loading={posterLoading}
-              onClick={handleDownloadPoster}
-            >
-              下载海报
-            </Button>
-          </div>
-        }
-        width={920}
-        footer={[
-          <Button key="back" onClick={() => setPosterVisible(false)}>
-            关闭
-          </Button>,
-          <Button
-            key="download"
-            type="primary"
-            icon={<DownloadOutlined />}
-            loading={posterLoading}
-            onClick={handleDownloadPoster}
-          >
-            下载海报
-          </Button>,
-        ]}
+        onClose={() => setPosterVisible(false)}
+        onDownload={handleDownloadPoster}
+        downloading={posterLoading}
+        width={540}
       >
-        <div style={{ padding: '16px 0' }}>
-          <Poster
-            ref={posterRef}
-            title="大语言模型排行榜"
-            updatedTimeText={new Date().toLocaleString()}
-            items={posterItems}
-            siteText={siteTitle || 'Aneiang 热榜聚合'}
-            qrText={window.location.href}
-            theme={theme}
-            renderItem={(it, _idx, themeTokens) => {
-              const score = num(it?.evaluations?.artificial_analysis_intelligence_index);
-              const price = num(it?.pricing?.price_1m_blended_3_to_1);
-              const speed = num(it?.median_output_tokens_per_second);
+        <Poster
+          ref={posterRef}
+          title="大语言模型排行榜"
+          updatedTimeText={new Date().toLocaleString()}
+          items={posterItems}
+          siteText={siteTitle || 'Aneiang 热榜聚合'}
+          qrText={window.location.href}
+          theme={theme}
+          size="mobile"
+          renderItem={(it, _idx, themeTokens) => {
+            const score = num(it?.evaluations?.artificial_analysis_intelligence_index);
+            const price = num(it?.pricing?.price_1m_blended_3_to_1);
+            const speed = num(it?.median_output_tokens_per_second);
 
-              return (
+            return (
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, minWidth: 0, width: '100%' }}>
                   {/* 左侧：模型信息 */}
                   <div style={{ flex: '1 1 auto', minWidth: 0 }}>
@@ -698,10 +671,9 @@ const LlmRanking = ({ siteTitle, theme = 'dark' }) => {
                   </div>
                 </div>
               );
-            }}
-          />
-        </div>
-      </Modal>
+          }}
+        />
+      </PosterModal>
     </div>
   );
 };

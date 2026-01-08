@@ -8,6 +8,7 @@ import LogoWarm from './assets/logo-warm.svg';
 import { nodeToPngBlob, downloadBlob } from './utils/poster';
 import { getSiteOrigin, getSiteHost, toAbsoluteUrl } from './utils/site';
 import { Grid } from 'antd';
+import PosterModal from './components/PosterModal';
 import {
   Spin,
   Dropdown,
@@ -497,6 +498,7 @@ function App() {
   const posterRef = useRef(null);
   const [posterData, setPosterData] = useState(null); // { title, items, updatedTime }
   const [isGeneratingPoster, setIsGeneratingPoster] = useState(false);
+  const [posterPreviewOpen, setPosterPreviewOpen] = useState(false); // 新增状态控制预览弹窗
 
   useEffect(() => {
     try {
@@ -540,44 +542,45 @@ function App() {
   // 生成并下载单个来源的海报图片
   const generatePoster = async (source, items, updatedTime) => {
     if (isGeneratingPoster) return;
+
+    // 只负责打开预览（不在这里直接下载）
+    setPosterData({
+      title: getChineseSourceName(source),
+      items,
+      updatedTime,
+    });
+    setPosterPreviewOpen(true);
+  };
+
+  const downloadPosterFromPreview = async () => {
+    if (isGeneratingPoster) return;
+    if (!posterRef.current || !posterData) return;
+
     setIsGeneratingPoster(true);
 
     try {
-      // 1. 设置海报数据（触发 Poster 组件渲染）
-      setPosterData({
-        title: getChineseSourceName(source),
-        items,
-        updatedTime,
+      const themeBgMap = {
+        light: '#f6f7fb',
+        warm: '#12110f',
+        dark: '#0b1220',
+      };
+
+      const blob = await nodeToPngBlob(posterRef.current, {
+        pixelRatio: 2, // 2x 分辨率
+        // 兜底：导出时强制背景色跟随主题（避免透明背景导致保存后变黑/变白）
+        backgroundColor: themeBgMap[theme] || themeBgMap.dark,
       });
 
-      // 2. 等待 DOM 更新
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // 3. 捕获 DOM 为图片并下载
-      if (posterRef.current) {
-        const themeBgMap = {
-          light: '#f6f7fb',
-          warm: '#12110f',
-          dark: '#0b1220',
-        };
-
-        const blob = await nodeToPngBlob(posterRef.current, {
-          pixelRatio: 2, // 2x 分辨率
-          // 兜底：导出时强制背景色跟随主题（避免透明背景导致保存后变黑/变白）
-          backgroundColor: themeBgMap[theme] || themeBgMap.dark,
-        });
-
-        const timeStr = updatedTime ? new Date(updatedTime).toISOString().split('T')[0] : '';
-        const filename = `热榜-${getChineseSourceName(source)}${timeStr ? `-${timeStr}` : ''}.png`;
-        await downloadBlob(blob, filename);
-        message.success('海报已保存');
-      }
+      const updatedTime = posterData?.updatedTime;
+      const timeStr = updatedTime ? new Date(updatedTime).toISOString().split('T')[0] : '';
+      const filename = `热榜-${posterData.title}${timeStr ? `-${timeStr}` : ''}.png`;
+      await downloadBlob(blob, filename);
+      message.success('海报已保存');
     } catch (e) {
       console.error('生成海报失败:', e);
       message.error('生成海报失败，请重试');
     } finally {
       setIsGeneratingPoster(false);
-      setPosterData(null);
     }
   };
 
@@ -1296,6 +1299,27 @@ function App() {
           />
         )}
       </div>
+
+      {/* 海报预览弹窗 */}
+      <PosterModal
+        open={posterPreviewOpen}
+        onClose={() => setPosterPreviewOpen(false)}
+        onDownload={downloadPosterFromPreview}
+        downloading={isGeneratingPoster}
+        width={540}
+      >
+        {posterData && (
+          <Poster
+            title={posterData.title}
+            items={posterData.items}
+            updatedTimeText={posterData.updatedTime ? getFullTimeString(posterData.updatedTime) : ''}
+            siteText={getSiteHost()}
+            theme={theme}
+            qrText={toAbsoluteUrl('/')}
+            size="mobile"
+          />
+        )}
+      </PosterModal>
     </div>
   );
 }
