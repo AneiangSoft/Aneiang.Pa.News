@@ -14,6 +14,7 @@ const Poster = forwardRef(function Poster(
     siteText,
     theme = 'dark',
     qrText,
+    renderItem,
   },
   ref
 ) {
@@ -237,16 +238,20 @@ const Poster = forwardRef(function Poster(
                 {idx + 1}
               </div>
 
-              <div
-                style={{
-                  fontSize: 16,
-                  lineHeight: 1.38,
-                  fontWeight: 650,
-                  wordBreak: 'break-word',
-                }}
-              >
-                {it.title}
-              </div>
+              {typeof renderItem === 'function' ? (
+                renderItem(it, idx, themeTokens)
+              ) : (
+                <div
+                  style={{
+                    fontSize: 16,
+                    lineHeight: 1.38,
+                    fontWeight: 650,
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {it.title}
+                </div>
+              )}
             </div>
           );
         })}

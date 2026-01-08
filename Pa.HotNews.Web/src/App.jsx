@@ -852,49 +852,10 @@ function App() {
                   },
                   { type: 'divider' },
                   {
-                    key: 'copy-filter-link',
-                    label: '复制筛选链接',
-                    icon: <CopyOutlined />,
-                    onClick: copyFilterLink,
-                  },
-                  {
                     key: 'share',
                     label: '分享本站',
                     icon: <ShareAltOutlined />,
                     onClick: sharePage,
-                  },
-                  {
-                    key: 'snapshot',
-                    label: '复制页面快照',
-                    icon: <CopyOutlined />,
-                    onClick: async () => {
-                      const chunks = [];
-                      for (const s of displaySources) {
-                        const b = newsBySource[s];
-                        if (b?.status !== 'success' || !b?.list?.length) continue;
-                        chunks.push(
-                          generateSnapshot({
-                            title: getChineseSourceName(s),
-                            items: b.list,
-                            updatedTime: b.updatedTime,
-                            limit: 10,
-                          })
-                        );
-                      }
-
-                      if (!chunks.length) {
-                        message.warning('没有可复制的内容');
-                        return;
-                      }
-
-                      const text = `${chunks.join('\n\n')}\n\n---\n来自：${location.href}`;
-                      try {
-                        await navigator.clipboard.writeText(text);
-                        message.success('页面快照已复制');
-                      } catch {
-                        message.error('复制失败');
-                      }
-                    },
                   },
                   {
                     key: 'source',
@@ -930,7 +891,7 @@ function App() {
 
       <main className="app-main">
         {view === 'llm' && isFeatureEnabled('llmRanking') ? (
-          <LlmRanking />
+          <LlmRanking siteTitle={siteCfg?.title} theme={theme} />
         ) : (
           (() => {
             if (isFirstLoading) {
