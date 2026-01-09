@@ -1,0 +1,134 @@
+/* 顶部 Header 样式从 App.css 中拆分出来（保持原样） */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0 2rem;
+  height: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  border-bottom: 1px solid color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.logo h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 70%, #ffffff), var(--primary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.5px;
+}
+
+:root[data-theme="light"] .logo h1 {
+  background: none;
+  color: var(--text-primary);
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.actions .ant-btn {
+  padding: 0 0.75rem;
+}
+
+.actions .ant-badge {
+  line-height: 1;
+}
+
+.search-input {
+  width: min(320px, 52vw);
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    height: auto;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .logo-img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .actions.mobile-actions {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+  }
+
+  .actions.mobile-actions .search-input {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+
+  .actions.mobile-actions .ant-btn {
+    flex: 0 0 auto;
+  }
+}
+
+.actions .ant-segmented {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.20);
+}
+
+:root[data-theme="light"] .actions .ant-segmented {
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.actions .ant-segmented-item {
+  color: var(--text-secondary);
+}
+
+.actions .ant-segmented-item-selected {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.actions .ant-segmented-thumb {
+  background: color-mix(in srgb, var(--bg-secondary) 55%, var(--primary) 45%);
+}
+
+:root[data-theme="light"] .actions .ant-segmented-thumb {
+  background: color-mix(in srgb, #ffffff 70%, var(--primary) 30%);
+}

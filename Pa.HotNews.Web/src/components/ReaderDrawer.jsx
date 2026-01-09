@@ -1,5 +1,6 @@
 import { Drawer, Button, Tooltip, Empty, Space } from 'antd';
 import { ReloadOutlined, LinkOutlined, CopyOutlined } from '@ant-design/icons';
+import './ReaderDrawer.css';
 
 function ReaderDrawer({
   open,

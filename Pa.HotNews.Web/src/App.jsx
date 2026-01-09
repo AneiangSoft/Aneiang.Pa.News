@@ -1,56 +1,34 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocalStorageState } from './hooks/useLocalStorageState';
+import { useLocalStorageSet } from './hooks/useLocalStorageSet';
+import { useLinkBehaviorTip } from './hooks/useLinkBehaviorTip';
+import { useSourceConfig } from './hooks/useSourceConfig';
+import { useFavorites } from './hooks/useFavorites';
+import { useNews } from './hooks/useNews';
+import { useReader } from './hooks/useReader';
 
 
 import Poster from './components/Poster';
-import LogoDark from './assets/logo-dark.svg';
-import LogoLight from './assets/logo-light.svg';
-import LogoWarm from './assets/logo-warm.svg';
 import { nodeToPngBlob, downloadBlob } from './utils/poster';
-import { getSiteOrigin, getSiteHost, toAbsoluteUrl } from './utils/site';
+import { getSiteOrigin, toAbsoluteUrl } from './utils/site';
 import { Grid } from 'antd';
+import AppHeader from './components/AppHeader';
 import PosterModal from './components/PosterModal';
 import ReaderDrawer from './components/ReaderDrawer';
+import FavoritesDrawer from './components/FavoritesDrawer';
+import SourceManagerDrawer from './components/SourceManagerDrawer';
+import MainView from './components/MainView';
 import {
-  Spin,
-  Dropdown,
-  Card,
-  List,
-  Button,
   message,
   BackTop,
-  Segmented,
-  Tooltip,
-  Drawer,
-  Empty,
-  Input,
-  Select,
-  Space,
-  Checkbox,
-  Divider,
-  Badge,
 } from 'antd';
 import {
   ArrowUpOutlined,
-  SyncOutlined,
-  MenuOutlined,
-  GithubOutlined,
-  BulbOutlined,
-  MoonOutlined,
-  SunOutlined,
-  StarOutlined,
-  StarFilled,
-  BookOutlined,
-  DeleteOutlined,
-  SettingOutlined,
-  ShareAltOutlined,
-  CopyOutlined,
-  ArrowUpOutlined as UpOutlined,
-  ArrowDownOutlined as DownOutlined,
 } from '@ant-design/icons';
 
 import { getSources, getNews } from './services/api';
 import { getFeatures } from './services/features';
-import LlmRanking from './components/LlmRanking';
+
 import { formatTime, getFullTimeString } from './utils/formatTime';
 import { highlightText } from './utils/highlight';
 import { quickShare } from './utils/share';
@@ -88,7 +66,6 @@ function App() {
   const { useBreakpoint } = Grid;
   const screens = useBreakpoint();
   const isMobile = !screens.xl;
-  const [newsBySource, setNewsBySource] = useState({});
 
   // 功能开关（Feature Flags）
   const [features, setFeatures] = useState({});
@@ -143,85 +120,21 @@ function App() {
     window.history.pushState({ view: newView }, '', url);
   };
 
-  // 全局 loading 仅用于首次加载骨架屏
-  const [isFirstLoading, setIsFirstLoading] = useState(true);
-
-  // theme: dark | light | warm
-  const getDefaultTheme = () => {
-    try {
-      const saved = localStorage.getItem('theme');
-      if (saved === 'dark' || saved === 'light' || saved === 'warm') return saved;
-    } catch {
-      // ignore
-    }
-
-    // 默认主题：浅色
-    return 'light';
-  };
-
-  const [theme, setTheme] = useState(getDefaultTheme);
-
-  // 打开方式：in-app (站内阅读) | new-tab (新标签页)
-  const LINK_BEHAVIOR_KEY = 'linkBehaviorV1';
-  const [linkBehavior, setLinkBehavior] = useState(() => {
-    try {
-      const saved = localStorage.getItem(LINK_BEHAVIOR_KEY);
-      if (saved === 'in-app' || saved === 'new-tab') return saved;
-    } catch {
-      // ignore
-    }
-    return 'new-tab'; // 默认新标签页打开
-  });
-
-  // URL 参数指定的“仅显示来源”（白名单）。null 表示不限制。
-  const [sourceWhitelist, setSourceWhitelist] = useState(null);
-
-  // 来源订阅/排序配置
-  const SOURCE_CFG_KEY = 'sourceConfigV1';
-  const [sourceCfg, setSourceCfg] = useState(() => {
-    try {
-      const raw = localStorage.getItem(SOURCE_CFG_KEY);
-      const parsed = raw ? JSON.parse(raw) : null;
-      if (parsed && typeof parsed === 'object') {
-        return {
-          order: Array.isArray(parsed.order) ? parsed.order : [],
-          hidden: Array.isArray(parsed.hidden) ? parsed.hidden : [],
-        };
-      }
-    } catch {
-      // ignore
-    }
-    return { order: [], hidden: [] };
-  });
-
-  const [sourceMgrOpen, setSourceMgrOpen] = useState(false);
-
-  // 已读：用 URL 做 key（更准确）。用 Set 提升查询效率。
-  const READ_KEY = 'readNewsUrls';
-  const [readSet, setReadSet] = useState(() => {
-    try {
-      const raw = localStorage.getItem(READ_KEY);
-      const arr = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(arr)) return new Set(arr.filter(Boolean));
-    } catch {
-      // ignore
-    }
-    return new Set();
-  });
-
-  // 拉取所有来源（首次加载/全量刷新用）
-  const fetchAllNews = async () => {
-    // 首次加载才展示全局 loading（后续刷新不遮挡页面）
-    setIsFirstLoading(prev => prev);
-
-    try {
-      const sources = await getSources();
-
+  // 热榜数据加载（抽到 hook）
+  const {
+    newsBySource,
+    isFirstLoading,
+    fetchAllNews,
+    retrySource,
+    didFetchRef,
+  } = useNews({
+    getSources,
+    getNews,
+    onSyncSources: (normalized) => {
       // 同步来源配置（新增源自动加入；消失的源从配置中移除）
-      const normalized = sources.map(s => s.toLowerCase());
       setSourceCfg(prev => {
-        const prevOrder = Array.isArray(prev.order) ? prev.order : [];
-        const prevHidden = new Set(Array.isArray(prev.hidden) ? prev.hidden : []);
+        const prevOrder = Array.isArray(prev?.order) ? prev.order : [];
+        const prevHidden = new Set(Array.isArray(prev?.hidden) ? prev.hidden : []);
 
         const order = prevOrder.filter(s => normalized.includes(s));
         for (const s of normalized) {
@@ -229,93 +142,33 @@ function App() {
         }
 
         const hidden = Array.from(prevHidden).filter(s => normalized.includes(s));
-        return { order, hidden };
+        return { ...prev, order, hidden };
       });
+    },
+    onGlobalError: () => message.error('获取新闻源失败', 3),
+  });
 
-      // 方案 1：分来源独立加载（避免单个平台过慢导致整页一直 loading）
+  // theme: dark | light | warm
+  const [theme, setTheme] = useLocalStorageState('theme', () => 'light');
 
-      // 1) 先把所有来源置为 loading，让页面先渲染出卡片
-      setNewsBySource(prev => {
-        const next = { ...prev };
-        for (const s of normalized) {
-          // 保留旧数据（可选）：刷新时不闪空
-          next[s] = {
-            status: 'loading',
-            list: next[s]?.list || [],
-            updatedTime: next[s]?.updatedTime ?? null,
-            error: null,
-          };
-        }
-        return next;
-      });
+  // 打开方式：in-app (站内阅读) | new-tab (新标签页)
+  const LINK_BEHAVIOR_KEY = 'linkBehaviorV1';
+  const [linkBehavior, setLinkBehavior] = useLocalStorageState(LINK_BEHAVIOR_KEY, () => 'new-tab');
 
-      // 2) 立即结束“全局首屏 loading”，不再等待所有来源完成
-      setIsFirstLoading(false);
+  // URL 参数指定的“仅显示来源”（白名单）。null 表示不限制。
+  const [sourceWhitelist, setSourceWhitelist] = useState(null);
 
-      // 3) 每个来源独立请求，谁先回来先更新谁（互不阻塞）
-      normalized.forEach(async key => {
-        try {
-          const payload = await getNews(key);
-          const list = Array.isArray(payload?.data) ? payload.data : payload?.data?.items || [];
-          const updatedTime = payload?.updatedTime ?? payload?.data?.updatedTime ?? payload?.data?.updateTime;
+  // 来源订阅/排序配置
+  const SOURCE_CFG_KEY = 'sourceConfigV1';
+  const [sourceCfg, setSourceCfg] = useLocalStorageState(SOURCE_CFG_KEY, () => ({ order: [], hidden: [] }));
 
-          setNewsBySource(prev => ({
-            ...prev,
-            [key]: { status: 'success', list, updatedTime, error: null },
-          }));
-        } catch (e) {
-          const errMsg = e?.message || '请求失败';
-          setNewsBySource(prev => ({
-            ...prev,
-            [key]: { status: 'error', list: [], updatedTime: null, error: errMsg },
-          }));
-        }
-      });
-    } catch (e) {
-      message.error('获取新闻源失败', 3);
-      // 兜底：失败也要结束首屏 loading
-      setIsFirstLoading(false);
-    } finally {
-      // 方案 1 中首屏 loading 已在 sources 成功后立即关闭，这里避免重复 setState
-    }
-  };
+  const [sourceMgrOpen, setSourceMgrOpen] = useState(false);
 
-  // 仅重试某一个来源（卡片“重试”按钮用）
-  const retrySource = async src => {
-    const key = String(src || '').toLowerCase();
-    if (!key) return;
+  // 已读：用 URL 做 key（更准确）。用 Set 提升查询效率。
+  const READ_KEY = 'readNewsUrls';
+  const [readSet, readSetApi] = useLocalStorageSet(READ_KEY);
 
-    // 先把该来源置为 loading（不影响其它来源）
-    setNewsBySource(prev => ({
-      ...prev,
-      [key]: {
-        ...(prev[key] || {}),
-        status: 'loading',
-        error: null,
-      },
-    }));
 
-    try {
-      const payload = await getNews(key, { bustCache: true });
-      const list = Array.isArray(payload?.data) ? payload.data : payload?.data?.items || [];
-      const updatedTime = payload?.updatedTime ?? payload?.data?.updatedTime ?? payload?.data?.updateTime;
-
-      setNewsBySource(prev => ({
-        ...prev,
-        [key]: { status: 'success', list, updatedTime, error: null },
-      }));
-    } catch (e) {
-      const errMsg = e?.message || '请求失败';
-      setNewsBySource(prev => ({
-        ...prev,
-        [key]: { status: 'error', list: [], updatedTime: null, error: errMsg },
-      }));
-    }
-  };
-
-  // React 18 + StrictMode 在开发环境会触发 effect 二次执行（挂载->卸载->再挂载），
-  // 这里用 ref 兜底，避免 dev 下重复请求。
-  const didFetchRef = useRef(false);
 
   // 首次进入：解析 URL 参数（q/theme/sources/view）
   // - q: 搜索词
@@ -424,7 +277,6 @@ function App() {
     const script = document.createElement('script');
     script.id = 'LA-DATA-WIDGET';
     script.crossOrigin = 'anonymous';
-    script.charset = 'UTF-8';
     script.src =
       'https://v6-widget.51.la/v6/3OZRKRdbxOzOcQYq/quote.js?theme=0&f=12&display=0,1,1,1,0,0,0,1';
 
@@ -443,80 +295,24 @@ function App() {
   // 应用主题到根节点（CSS 变量在 App.css 里通过 :root[data-theme] 控制）
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    try {
-      localStorage.setItem('theme', theme);
-    } catch {
-      // ignore
-    }
   }, [theme]);
 
-  // 持久化“打开方式”
-  // 只在“用户刚刚切换到站内阅读”的那个瞬间提示；刷新页面不会提示
-  const prevLinkBehaviorRef = useRef(linkBehavior);
-  useEffect(() => {
-    const prev = prevLinkBehaviorRef.current;
-    prevLinkBehaviorRef.current = linkBehavior;
+  // 切换到“站内阅读”时提示（仅切换触发，刷新不提示）
+  useLinkBehaviorTip({
+    linkBehavior,
+    blockedSources: new Set(['zhihu', 'baidu', 'douyin', 'toutiao', 'cnblog']),
+    getChineseSourceName,
+  });
 
-    try {
-      localStorage.setItem(LINK_BEHAVIOR_KEY, linkBehavior);
-    } catch {
-      // ignore
-    }
-
-    // 仅当从非 in-app 切到 in-app 时提示（刷新页面时 prev===current，不会提示）
-    if (prev !== 'in-app' && linkBehavior === 'in-app') {
-      const blockedSet = new Set(['zhihu', 'baidu', 'douyin', 'toutiao', 'cnblog']);
-      const blocked = Array.from(blockedSet)
-        .map(s => getChineseSourceName(s))
-        .join(' / ');
-
-      message.info(
-        `已切换为站内阅读。注意：${blocked} 平台可能无法站内打开，可按 Ctrl（macOS 为 ⌘）+ 鼠标点击标题快速跳转新标签页。`,
-        4
-      );
-    }
-  }, [linkBehavior]);
-
-  // 持久化来源配置
-  useEffect(() => {
-    try {
-      localStorage.setItem(SOURCE_CFG_KEY, JSON.stringify(sourceCfg));
-    } catch {
-      // ignore
-    }
-  }, [sourceCfg]);
-
-  // 持久化已读集合
-  useEffect(() => {
-    try {
-      localStorage.setItem(READ_KEY, JSON.stringify(Array.from(readSet)));
-    } catch {
-      // ignore
-    }
-  }, [readSet]);
 
   const markAsRead = url => {
     if (!url) return;
-    setReadSet(prev => {
-      if (prev.has(url)) return prev;
-      const next = new Set(prev);
-      next.add(url);
-      return next;
-    });
+    readSetApi.add(url);
   };
 
   // 收藏：用 url 做 key，值存 { url, title, source, ts }
   const FAVORITE_KEY = 'favoriteNews';
-  const [favoriteMap, setFavoriteMap] = useState(() => {
-    try {
-      const raw = localStorage.getItem(FAVORITE_KEY);
-      const obj = raw ? JSON.parse(raw) : {};
-      if (obj && typeof obj === 'object') return obj;
-    } catch {
-      // ignore
-    }
-    return {};
-  });
+  const [favoriteMap, setFavoriteMap] = useLocalStorageState(FAVORITE_KEY, () => ({}));
 
   const [favOpen, setFavOpen] = useState(false);
 
@@ -531,77 +327,34 @@ function App() {
   // 移动端：导航下拉菜单
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // 站内阅读（底部全屏 Drawer + iframe）
-  const [readerOpen, setReaderOpen] = useState(false);
-  const [readerItem, setReaderItem] = useState(null); // { url, title, source }
-  const [readerKey, setReaderKey] = useState(0); // 用于强制 iframe 重新加载
-  const [readerEmbedBlocked, setReaderEmbedBlocked] = useState(false);
-  const [readerHeaderLoading, setReaderHeaderLoading] = useState(false);
-
-  // 最近阅读（最多 20 条）
-  // 说明：上一条/下一条已改为按“来源列表顺序”跳转，这里保留历史用于未来扩展（例如历史下拉）。
-  const [readerHistory, setReaderHistory] = useState([]);
-  void readerHistory;
-
   // 已知不支持 iframe 嵌入的来源：直接降级为“友好提示 + 新开原文”
   const NO_IFRAME_SOURCES = useMemo(
     () => new Set(['zhihu', 'baidu', 'douyin', 'toutiao', 'cnblog']),
     []
   );
 
-  const pushReaderHistory = ({ url, title, source }) => {
-    if (!url) return;
-    const src = String(source || '').toLowerCase();
-    setReaderHistory(prev => {
-      const next = [
-        { url, title: title || '', source: src, ts: Date.now() },
-        ...(prev || []).filter(x => x?.url && x.url !== url),
-      ];
-      return next.slice(0, 20);
-    });
-  };
-
-  const computeReaderNeighbors = ({ url, source }) => {
-    const src = String(source || '').toLowerCase();
-    if (!url || !src) return { prevItem: null, nextItem: null };
-
-    const q = query.trim().toLowerCase();
-    const listRaw = newsBySource?.[src]?.list || [];
-    const list = q
-      ? listRaw.filter(n => (n?.title || '').toLowerCase().includes(q))
-      : listRaw;
-
-    const idx = list.findIndex(x => x?.url === url);
-    if (idx < 0) return { prevItem: null, nextItem: null };
-
-    const prev = idx > 0 ? list[idx - 1] : null;
-    const next = idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null;
-
-    return {
-      prevItem: prev ? { url: prev.url, title: prev.title, source: src } : null,
-      nextItem: next ? { url: next.url, title: next.title, source: src } : null,
-    };
-  };
-
-  const openReaderFromItem = ({ url, title, source }) => {
-    if (!url) return;
-
-    // 用户选择“新标签页打开”则直接外跳
-    if (linkBehavior === 'new-tab') {
-      window.open(url, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    const src = String(source || '').toLowerCase();
-    const degraded = NO_IFRAME_SOURCES.has(src);
-
-    setReaderEmbedBlocked(degraded);
-    setReaderHeaderLoading(!degraded);
-    setReaderItem({ url, title, source: src });
-    pushReaderHistory({ url, title, source: src });
-    setReaderKey(prev => prev + 1);
-    setReaderOpen(true);
-  };
+  // 站内阅读（抽到 hook）
+  const {
+    readerOpen,
+    readerItem,
+    readerKey,
+    readerEmbedBlocked,
+    readerHeaderLoading,
+    openReaderFromItem,
+    closeReader,
+    reloadReader,
+    onIframeLoad,
+    onIframeError,
+    openReaderPrev,
+    openReaderNext,
+    prevItem,
+    nextItem,
+  } = useReader({
+    linkBehavior,
+    noIframeSources: NO_IFRAME_SOURCES,
+    query,
+    newsBySource,
+  });
 
   // 站点配置（页脚等）
   const [siteCfg, setSiteCfg] = useState({});
@@ -612,33 +365,6 @@ function App() {
   const [isGeneratingPoster, setIsGeneratingPoster] = useState(false);
   const [posterPreviewOpen, setPosterPreviewOpen] = useState(false); // 新增状态控制预览弹窗
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(FAVORITE_KEY, JSON.stringify(favoriteMap));
-    } catch {
-      // ignore
-    }
-  }, [favoriteMap]);
-
-  const isFavorited = url => !!(url && favoriteMap[url]);
-
-  const toggleFavorite = (item, source) => {
-    if (!item?.url) return;
-    setFavoriteMap(prev => {
-      const next = { ...prev };
-      if (next[item.url]) {
-        delete next[item.url];
-      } else {
-        next[item.url] = {
-          url: item.url,
-          title: item.title,
-          source,
-          ts: Date.now(),
-        };
-      }
-      return next;
-    });
-  };
 
   const sharePage = async () => {
     const res = await quickShare({
@@ -698,59 +424,22 @@ function App() {
 
   const copySnapshot = async ({ title, items, updatedTime, limit = 10 }) => {
     const text = `${generateSnapshot({ title, items, updatedTime, limit })}\n\n---\n来自：${location.href}`;
-
-    try {
-      await navigator.clipboard.writeText(text);
-      message.success('快照已复制');
-      return;
-    } catch {
-      // ignore
-    }
-
-    // 兼容降级：execCommand
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.setAttribute('readonly', '');
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      ta.style.top = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      if (ok) message.success('快照已复制');
-      else message.error('复制失败');
-    } catch {
-      message.error('复制失败');
-    }
+    const { copyText } = await import('./utils/clipboard');
+    await copyText(text, { successMsg: '快照已复制', failMsg: '复制失败' });
   };
 
-  const clearFavorites = () => setFavoriteMap({});
-
-  const favoriteList = useMemo(() => {
-    return Object.values(favoriteMap).sort((a, b) => (b.ts || 0) - (a.ts || 0));
-  }, [favoriteMap]);
-
-  const favoriteCount = favoriteList.length;
-
-  // 收藏 Drawer 内搜索/筛选
-  const [favQuery, setFavQuery] = useState('');
-  const [favSource, setFavSource] = useState('all');
-
-  const favoriteSources = useMemo(() => {
-    const set = new Set(favoriteList.map(x => x.source).filter(Boolean));
-    return Array.from(set).sort();
-  }, [favoriteList]);
-
-  const filteredFavoriteList = useMemo(() => {
-    const q = favQuery.trim().toLowerCase();
-    return favoriteList.filter(item => {
-      if (favSource !== 'all' && item.source !== favSource) return false;
-      if (!q) return true;
-      return (item.title || '').toLowerCase().includes(q);
-    });
-  }, [favoriteList, favQuery, favSource]);
+  const {
+    isFavorited,
+    toggleFavorite,
+    clearFavorites,
+    favoriteCount,
+    favQuery,
+    setFavQuery,
+    favSource,
+    setFavSource,
+    favoriteSources,
+    filteredFavoriteList,
+  } = useFavorites({ favoriteMap, setFavoriteMap });
 
   // 来源管理：计算当前所有来源（来自数据与 order 合并）
   const allSources = useMemo(() => {
@@ -760,37 +449,11 @@ function App() {
     return Array.from(set);
   }, [newsBySource, sourceCfg.order]);
 
-  const hiddenSet = useMemo(() => new Set(sourceCfg.hidden || []), [sourceCfg.hidden]);
-
-  const setSourceVisible = (src, visible) => {
-    const key = String(src).toLowerCase();
-    setSourceCfg(prev => {
-      const hidden = new Set(prev.hidden || []);
-      if (visible) hidden.delete(key);
-      else hidden.add(key);
-      return { ...prev, hidden: Array.from(hidden) };
-    });
-  };
-
-  const moveSource = (src, dir) => {
-    const key = String(src).toLowerCase();
-    setSourceCfg(prev => {
-      const order = Array.isArray(prev.order) ? [...prev.order] : [];
-      const idx = order.indexOf(key);
-      if (idx < 0) return prev;
-      const nextIdx = dir === 'up' ? idx - 1 : idx + 1;
-      if (nextIdx < 0 || nextIdx >= order.length) return prev;
-      const tmp = order[idx];
-      order[idx] = order[nextIdx];
-      order[nextIdx] = tmp;
-      return { ...prev, order };
-    });
-  };
-
-  const resetSourceCfg = () => {
-    const normalized = allSources;
-    setSourceCfg({ order: normalized, hidden: [] });
-  };
+  const { hiddenSet, setSourceVisible, moveSource, resetSourceCfg } = useSourceConfig({
+    allSources,
+    sourceCfg,
+    setSourceCfg,
+  });
 
   // 渲染用的来源顺序（先按配置顺序，再补齐遗漏），并应用 URL sources 白名单过滤
   const displaySources = useMemo(() => {
@@ -829,587 +492,96 @@ function App() {
 
   const copyFilterLink = async () => {
     const url = buildShareUrl();
-    try {
-      await navigator.clipboard.writeText(url);
-      message.success('筛选链接已复制');
-    } catch {
-      // 降级
-      try {
-        const ta = document.createElement('textarea');
-        ta.value = url;
-        ta.setAttribute('readonly', '');
-        ta.style.position = 'fixed';
-        ta.style.left = '-9999px';
-        ta.style.top = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        const ok = document.execCommand('copy');
-        document.body.removeChild(ta);
-        if (ok) message.success('筛选链接已复制');
-        else message.error('复制失败');
-      } catch {
-        message.error('复制失败');
-      }
-    }
+    const { copyText } = await import('./utils/clipboard');
+    await copyText(url, { successMsg: '筛选链接已复制', failMsg: '复制失败' });
   };
 
   return (
     <div className="app-container">
-      <header className="app-header">
-        <div className="logo">
-          <img
-            className="logo-img"
-            src={{ dark: LogoDark, light: LogoLight, warm: LogoWarm }[theme]}
-            alt="热榜聚合 Logo"
-          />
-          <h1>{siteCfg?.title || '热榜聚合'}</h1>
-
-          {availableViews.length > 1 && (
-            <Segmented
-              value={view}
-              onChange={handleViewChange}
-              options={availableViews.map(v => ({ label: v.label, value: v.key }))}
-            />
-          )}
-        </div>
-
-        {/* 桌面端：原来的导航 */}
-        {!isMobile && (
-          <div className="actions">
-            <Input
-              allowClear
-              className="search-input"
-              placeholder="搜索所有热榜标题..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-            />
-
-            <Tooltip title="主题切换（深色 / 浅色 / 护眼暖色）">
-              <Segmented
-                value={theme}
-                onChange={setTheme}
-                options={[
-                  { label: '深色', value: 'dark', icon: <MoonOutlined /> },
-                  { label: '浅色', value: 'light', icon: <SunOutlined /> },
-                  { label: '护眼', value: 'warm', icon: <BulbOutlined /> },
-                ]}
-              />
-            </Tooltip>
-
-            <Tooltip title="链接打开方式（站内阅读 / 新标签页）">
-              <Segmented
-                value={linkBehavior}
-                onChange={setLinkBehavior}
-                options={[
-                  { label: '站内阅读', value: 'in-app' },
-                  { label: '新标签页', value: 'new-tab' },
-                ]}
-              />
-            </Tooltip>
-
-            <Tooltip title="复制当前筛选链接">
-              <Button type="default" icon={<CopyOutlined />} onClick={copyFilterLink} />
-            </Tooltip>
-
-            <Tooltip title="分享本站">
-              <Button type="default" icon={<ShareAltOutlined />} onClick={sharePage} />
-            </Tooltip>
-
-            <Tooltip title="来源管理">
-              <Button type="default" icon={<SettingOutlined />} onClick={() => setSourceMgrOpen(true)} />
-            </Tooltip>
-
-            <Tooltip title="收藏">
-              <Badge count={favoriteCount} size="small" offset={[-2, 2]}>
-                <Button type="default" icon={<BookOutlined />} onClick={() => setFavOpen(true)} />
-              </Badge>
-            </Tooltip>
-
-            <Tooltip title="GitHub">
-              <Button
-                type="default"
-                icon={<GithubOutlined />}
-                onClick={() =>
-                  window.open(
-                    'https://github.com/AneiangSoft/Aneiang.Pa.News',
-                    '_blank',
-                    'noopener,noreferrer'
-                  )
-                }
-              />
-            </Tooltip>
-          </div>
-        )}
-
-        {/* 移动端：下拉菜单 */}
-        {isMobile && (
-          <div className="actions mobile-actions">
-            <Input
-              allowClear
-              className="search-input"
-              placeholder="搜索所有热榜标题..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-            />
-
-            <Dropdown
-              trigger={['click']}
-              open={mobileMenuOpen}
-              onOpenChange={setMobileMenuOpen}
-              menu={{
-                items: [
-                  {
-                    key: 'theme-dark',
-                    label: '深色主题',
-                    icon: <MoonOutlined />,
-                    onClick: () => setTheme('dark'),
-                  },
-                  {
-                    key: 'theme-light',
-                    label: '浅色主题',
-                    icon: <SunOutlined />,
-                    onClick: () => setTheme('light'),
-                  },
-                  {
-                    key: 'theme-warm',
-                    label: '护眼主题',
-                    icon: <BulbOutlined />,
-                    onClick: () => setTheme('warm'),
-                  },
-                  { type: 'divider' },
-                  {
-                    key: 'share',
-                    label: '分享本站',
-                    icon: <ShareAltOutlined />,
-                    onClick: sharePage,
-                  },
-                  {
-                    key: 'source',
-                    label: '来源管理',
-                    icon: <SettingOutlined />,
-                    onClick: () => setSourceMgrOpen(true),
-                  },
-                  {
-                    key: 'fav',
-                    label: `收藏${favoriteCount ? `（${favoriteCount}）` : ''}`,
-                    icon: <BookOutlined />,
-                    onClick: () => setFavOpen(true),
-                  },
-                  {
-                    key: 'github',
-                    label: 'Github',
-                    icon: <GithubOutlined />,
-                    onClick: () =>
-                      window.open(
-                        'https://github.com/AneiangSoft/Aneiang.Pa',
-                        '_blank',
-                        'noopener,noreferrer'
-                      ),
-                  },
-                ],
-              }}
-            >
-              <Button type="default" icon={<MenuOutlined />} />
-            </Dropdown>
-          </div>
-        )}
-      </header>
+      <AppHeader
+        siteTitle={siteCfg?.title}
+        theme={theme}
+        setTheme={setTheme}
+        view={view}
+        availableViews={availableViews}
+        handleViewChange={handleViewChange}
+        query={query}
+        setQuery={setQuery}
+        linkBehavior={linkBehavior}
+        setLinkBehavior={setLinkBehavior}
+        copyFilterLink={copyFilterLink}
+        sharePage={sharePage}
+        onOpenSourceMgr={() => setSourceMgrOpen(true)}
+        favoriteCount={favoriteCount}
+        onOpenFavorites={() => setFavOpen(true)}
+        isMobile={isMobile}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      />
 
       <main className="app-main">
-        {view === 'llm' && isFeatureEnabled('llmRanking') ? (
-          <LlmRanking siteTitle={siteCfg?.title} theme={theme} />
-        ) : (
-          (() => {
-            if (isFirstLoading) {
-              return (
-                <div className="spin-container">
-                  <Spin size="large" />
-                </div>
-              );
-            }
-
-            const q = query.trim().toLowerCase();
-
-            const cards = displaySources.map(src => {
-              const block = newsBySource[src];
-              const status = block?.status || 'loading';
-              const news = block?.list;
-              const updatedTime = block?.updatedTime;
-              const errorMsg = block?.error;
-              const filtered = q
-                ? (news || []).filter(n => (n?.title || '').toLowerCase().includes(q))
-                : news;
-
-              return {
-                src,
-                status,
-                news,
-                updatedTime,
-                errorMsg,
-                filtered,
-                title: getChineseSourceName(src),
-              };
-            });
-
-            // 搜索中：若所有“成功卡片”都无匹配（且至少有一个成功卡片），则显示友好空状态
-            if (q) {
-              const successCards = cards.filter(x => x.status === 'success');
-              const hasAnyMatch = successCards.some(x => (x.filtered?.length ?? 0) > 0);
-
-              if (successCards.length > 0 && !hasAnyMatch) {
-                return (
-                  <div className="news-grid">
-                    <div style={{ gridColumn: '1 / -1', padding: '60px 0' }}>
-                      <Empty
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                        description={
-                          <div>
-                            <div style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 6 }}>
-                              没有找到与“{query.trim()}”相关的内容
-                            </div>
-                            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                              试试更换关键词，或清空搜索
-                            </div>
-                          </div>
-                        }
-                      />
-                    </div>
-                  </div>
-                );
-              }
-            }
-
-            return (
-              <div className="news-grid">
-                {cards
-                  // 搜索时：只展示“有匹配数据”的卡片（避免一堆空卡片）
-                  .filter(x => (q ? x.status !== 'success' || (x.filtered?.length ?? 0) > 0 : true))
-                  .map(({ src, status, news, updatedTime, errorMsg, filtered, title }) => {
-                    return (
-                      <Card
-                        key={src}
-                        title={title}
-                        extra={
-                          <span className="card-extra">
-                            {status === 'error' ? (
-                              <Tooltip title={errorMsg || '加载失败'}>
-                                <span className="card-error-label">加载失败</span>
-                              </Tooltip>
-                            ) : updatedTime ? (
-                              <span className="card-updated" title={getFullTimeString(updatedTime)}>
-                                {formatTime(updatedTime)}
-                              </span>
-                            ) : null}
-
-                            {q && status === 'success' ? (
-                              <span className="card-extra-count">{`${filtered.length} / ${(news || []).length}`}</span>
-                            ) : null}
-
-                            {status === 'success' && (
-                              <Space size={2}>
-                                <Tooltip title="复制快照">
-                                  <Button
-                                    type="text"
-                                    size="small"
-                                    className="card-action-btn"
-                                    icon={<CopyOutlined />}
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      copySnapshot({
-                                        title,
-                                        items: news,
-                                        updatedTime,
-                                      });
-                                    }}
-                                  />
-                                </Tooltip>
-
-                                <Tooltip title="生成海报">
-                                  <Button
-                                    type="text"
-                                    size="small"
-                                    className="card-action-btn"
-                                    icon={<ShareAltOutlined />}
-                                    loading={isGeneratingPoster}
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      generatePoster(src, news || [], updatedTime);
-                                    }}
-                                  />
-                                </Tooltip>
-                              </Space>
-                            )}
-                          </span>
-                        }
-                        className={`source-card status-${status}`}
-                        data-source={src.toLowerCase()}
-                      >
-                        {status === 'error' ? (
-                          <div className="card-state-body">
-                            <div className="card-error-visual" aria-hidden="true">
-                              <img className="card-error-img" src="/error.svg" alt="" />
-                            </div>
-
-                            <div className="card-error-text">加载失败</div>
-
-                            <div className="card-error-actions">
-                              <Button size="small" icon={<SyncOutlined />} onClick={() => retrySource(src)}>
-                                重试该来源
-                              </Button>
-                            </div>
-
-                            <div className="card-error-hint">提示：可能是接口限流/网络波动，稍等片刻再试。</div>
-                          </div>
-                        ) : status === 'success' ? (
-                          filtered?.length ? (
-                            <List
-                              className="news-list"
-                              dataSource={filtered}
-                              renderItem={(item, idx) => (
-                                <List.Item>
-                                  <span className="news-rank">{idx + 1}</span>
-
-                                  <Tooltip
-                                    title={item.title}
-                                    placement="topLeft"
-                                    mouseEnterDelay={0.2}
-                                    overlayClassName="news-title-tooltip"
-                                  >
-                                    <a
-                                      href={item.url}
-                                      className={readSet.has(item.url) ? 'is-read' : ''}
-                                      onClick={e => {
-                                        // 当选择“站内阅读”时：支持 Ctrl/⌘ + 点击新标签页打开
-                                        // - Windows/Linux: Ctrl + Click
-                                        // - macOS: Command(⌘) + Click
-                                        const openInNewTab = e.ctrlKey || e.metaKey;
-
-                                        // 若用户当前偏好就是“新标签页打开”，或者按住 Ctrl/⌘，则交给浏览器默认行为
-                                        if (linkBehavior === 'new-tab' || openInNewTab) {
-                                          return;
-                                        }
-
-                                        e.preventDefault();
-                                        markAsRead(item.url);
-                                        openReaderFromItem({
-                                          url: item.url,
-                                          title: item.title,
-                                          source: src,
-                                        });
-                                      }}
-                                    >
-                                      {highlightText(item.title, query)}
-                                    </a>
-                                  </Tooltip>
-
-                                  <button
-                                    type="button"
-                                    className={isFavorited(item.url) ? 'fav-btn is-fav' : 'fav-btn'}
-                                    title={isFavorited(item.url) ? '取消收藏' : '收藏'}
-                                    onClick={e => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      toggleFavorite(item, src);
-                                    }}
-                                  >
-                                    {isFavorited(item.url) ? <StarFilled /> : <StarOutlined />}
-                                  </button>
-                                </List.Item>
-                              )}
-                            />
-                          ) : (
-                            <div className="card-state-body">
-                              <Empty description={q ? '没有匹配结果' : '暂无数据'} />
-                            </div>
-                          )
-                        ) : (
-                          <div className="card-state-body">
-                            <Spin size="small" />
-                            <span style={{ marginLeft: 8, color: 'var(--text-secondary)' }}>加载中...</span>
-                          </div>
-                        )}
-                      </Card>
-                    );
-                  })}
-              </div>
-            );
-          })()
-        )}
+        <MainView
+          view={view}
+          isFeatureEnabled={isFeatureEnabled}
+          isFirstLoading={isFirstLoading}
+          siteTitle={siteCfg?.title}
+          theme={theme}
+          newsGridProps={{
+            displaySources,
+            newsBySource,
+            getChineseSourceName,
+            query,
+            readSet,
+            linkBehavior,
+            openReaderFromItem,
+            markAsRead,
+            isFavorited,
+            toggleFavorite,
+            copySnapshot,
+            generatePoster,
+            isGeneratingPoster,
+            getFullTimeString,
+            formatTime,
+            highlightText,
+            retrySource,
+          }}
+        />
       </main>
 
       {/* 来源管理 Drawer */}
-      <Drawer
-        title="来源管理"
-        placement="right"
-        width={420}
+      <SourceManagerDrawer
         open={sourceMgrOpen}
         onClose={() => setSourceMgrOpen(false)}
-        extra={
-          <Button type="default" onClick={resetSourceCfg}>
-            重置
-          </Button>
-        }
-      >
-        <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 10 }}>
-          勾选显示/隐藏来源；使用上下箭头调整卡片顺序。
-        </div>
-
-        <div style={{ marginBottom: 10 }}>
-          <Checkbox
-            indeterminate={
-              (sourceCfg.order || []).length
-                ? sourceCfg.hidden.length > 0 && sourceCfg.hidden.length < (sourceCfg.order || []).length
-                : sourceCfg.hidden.length > 0 && sourceCfg.hidden.length < allSources.length
-            }
-            checked={
-              (sourceCfg.order || []).length
-                ? sourceCfg.hidden.length === 0
-                : sourceCfg.hidden.length === 0
-            }
-            onChange={e => {
-              const checked = e.target.checked;
-              if (checked) {
-                // 全选：清空 hidden
-                setSourceCfg(prev => ({ ...prev, hidden: [] }));
-              } else {
-                // 取消全选：全部隐藏
-                const list = (sourceCfg.order || []).length ? sourceCfg.order : allSources;
-                setSourceCfg(prev => ({ ...prev, hidden: list.map(s => String(s).toLowerCase()) }));
-              }
-            }}
-          >
-            全选
-          </Checkbox>
-        </div>
-
-        <List
-          dataSource={(sourceCfg.order || []).length ? sourceCfg.order : allSources}
-          renderItem={(s, idx) => {
-            const src = String(s).toLowerCase();
-            const visible = !hiddenSet.has(src);
-            return (
-              <List.Item
-                actions={[
-                  <Button
-                    key="up"
-                    type="text"
-                    icon={<UpOutlined />}
-                    disabled={idx === 0}
-                    onClick={() => moveSource(src, 'up')}
-                  />,
-                  <Button
-                    key="down"
-                    type="text"
-                    icon={<DownOutlined />}
-                    disabled={idx === (sourceCfg.order || []).length - 1}
-                    onClick={() => moveSource(src, 'down')}
-                  />,
-                ]}
-              >
-                <Checkbox checked={visible} onChange={e => setSourceVisible(src, e.target.checked)}>
-                  {getChineseSourceName(src)}
-                </Checkbox>
-              </List.Item>
-            );
-          }}
-        />
-        <Divider />
-        <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
-          提示：隐藏来源不会删除数据，只是不在首页展示。
-        </div>
-      </Drawer>
+        width={420}
+        allSources={allSources}
+        sourceCfg={sourceCfg}
+        hiddenSet={hiddenSet}
+        getChineseSourceName={getChineseSourceName}
+        resetSourceCfg={resetSourceCfg}
+        setSourceVisible={setSourceVisible}
+        moveSource={moveSource}
+      />
 
       {/* 收藏 Drawer */}
-      <Drawer
-        title={`收藏（${favoriteCount}）`}
-        placement="right"
-        width={420}
+      <FavoritesDrawer
         open={favOpen}
         onClose={() => setFavOpen(false)}
-        extra={
-          <Button danger icon={<DeleteOutlined />} onClick={clearFavorites} disabled={favoriteCount === 0}>
-            清空
-          </Button>
-        }
-      >
-        {favoriteCount === 0 ? (
-          <Empty description="暂无收藏" />
-        ) : (
-          <>
-            <Space className="fav-tools" direction="vertical" size={10} style={{ width: '100%' }}>
-              <Input
-                allowClear
-                placeholder="在收藏中搜索标题..."
-                value={favQuery}
-                onChange={e => setFavQuery(e.target.value)}
-              />
-              <Select
-                value={favSource}
-                onChange={setFavSource}
-                options={[
-                  { value: 'all', label: '全部来源' },
-                  ...favoriteSources.map(s => ({ value: s, label: getChineseSourceName(s) })),
-                ]}
-              />
-            </Space>
-
-            {filteredFavoriteList.length === 0 ? (
-              <Empty description="没有匹配的收藏" style={{ marginTop: 24 }} />
-            ) : (
-              <List
-                style={{ marginTop: 12 }}
-                dataSource={filteredFavoriteList}
-                renderItem={fav => (
-                  <List.Item>
-                    <Tooltip
-                      title={fav.title}
-                      placement="topLeft"
-                      mouseEnterDelay={0.2}
-                      overlayClassName="news-title-tooltip"
-                    >
-                      <a
-                        href={fav.url}
-                        className={readSet.has(fav.url) ? 'is-read' : ''}
-                        onClick={e => {
-                          // 当选择“站内阅读”时：支持 Ctrl/⌘ + 点击新标签页打开
-                          const openInNewTab = e.ctrlKey || e.metaKey;
-
-                          // 若用户当前偏好就是“新标签页打开”，或者按住 Ctrl/⌘，则交给浏览器默认行为
-                          if (linkBehavior === 'new-tab' || openInNewTab) {
-                            return;
-                          }
-
-                          e.preventDefault();
-                          markAsRead(fav.url);
-                          openReaderFromItem({
-                            url: fav.url,
-                            title: fav.title,
-                            source: fav.source,
-                          });
-                        }}
-                      >
-                        {highlightText(fav.title, favQuery)}
-                      </a>
-                    </Tooltip>
-                    <button
-                      type="button"
-                      className="fav-btn is-fav"
-                      title="取消收藏"
-                      onClick={e => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleFavorite({ url: fav.url, title: fav.title }, fav.source);
-                      }}
-                    >
-                      <StarFilled />
-                    </button>
-                  </List.Item>
-                )}
-              />
-            )}
-          </>
-        )}
-      </Drawer>
+        favoriteCount={favoriteCount}
+        filteredFavoriteList={filteredFavoriteList}
+        favoriteSources={favoriteSources}
+        favQuery={favQuery}
+        setFavQuery={setFavQuery}
+        favSource={favSource}
+        setFavSource={setFavSource}
+        clearFavorites={clearFavorites}
+        readSet={readSet}
+        linkBehavior={linkBehavior}
+        markAsRead={markAsRead}
+        openReaderFromItem={openReaderFromItem}
+        toggleFavorite={toggleFavorite}
+        getChineseSourceName={getChineseSourceName}
+        highlightText={highlightText}
+      />
 
       {/* Footer */}
       <footer className="app-footer">
@@ -1441,73 +613,34 @@ function App() {
       </BackTop>
 
       {/* 站内阅读抽屉 */}
-      {(() => {
-        const { prevItem, nextItem } = computeReaderNeighbors({
-          url: readerItem?.url,
-          source: readerItem?.source,
-        });
-
-        return (
-          <ReaderDrawer
-            open={readerOpen}
-            item={readerItem}
-            iframeKey={readerKey}
-            embedBlocked={readerEmbedBlocked}
-            loading={false}
-            getChineseSourceName={getChineseSourceName}
-            headerLoading={readerHeaderLoading}
-            prevItem={prevItem}
-            nextItem={nextItem}
-            onPrev={() => {
-              if (!prevItem) return;
-              setReaderEmbedBlocked(false);
-              setReaderHeaderLoading(true);
-              setReaderItem(prevItem);
-              pushReaderHistory(prevItem);
-              setReaderKey(prev => prev + 1);
-            }}
-            onNext={() => {
-              if (!nextItem) return;
-              setReaderEmbedBlocked(false);
-              setReaderHeaderLoading(true);
-              setReaderItem(nextItem);
-              pushReaderHistory(nextItem);
-              setReaderKey(prev => prev + 1);
-            }}
-            onClose={() => {
-              setReaderOpen(false);
-              setReaderEmbedBlocked(false);
-              setReaderHeaderLoading(false);
-            }}
-            onReload={() => {
-              setReaderEmbedBlocked(false);
-              setReaderHeaderLoading(true);
-              setReaderKey(prev => prev + 1);
-            }}
-            onOpenInNewTab={() => {
-              if (readerItem?.url) window.open(readerItem.url, '_blank', 'noopener,noreferrer');
-            }}
-            onCopyLink={async () => {
-              if (!readerItem?.url) return;
-              try {
-                await navigator.clipboard.writeText(readerItem.url);
-                message.success('链接已复制');
-              } catch {
-                message.error('复制失败');
-              }
-            }}
-            onIframeLoad={() => {
-              window.clearTimeout(window.__readerTimeout);
-              setReaderHeaderLoading(false);
-            }}
-            onIframeError={(e) => {
-              console.error('Iframe 加载失败:', e);
-              setReaderHeaderLoading(false);
-              setReaderEmbedBlocked(true);
-            }}
-          />
-        );
-      })()}
+      <ReaderDrawer
+        open={readerOpen}
+        item={readerItem}
+        iframeKey={readerKey}
+        embedBlocked={readerEmbedBlocked}
+        getChineseSourceName={getChineseSourceName}
+        headerLoading={readerHeaderLoading}
+        prevItem={prevItem}
+        nextItem={nextItem}
+        onPrev={() => openReaderPrev(prevItem)}
+        onNext={() => openReaderNext(nextItem)}
+        onClose={closeReader}
+        onReload={reloadReader}
+        onOpenInNewTab={() => {
+          if (readerItem?.url) window.open(readerItem.url, '_blank', 'noopener,noreferrer');
+        }}
+        onCopyLink={async () => {
+          if (!readerItem?.url) return;
+          try {
+            await navigator.clipboard.writeText(readerItem.url);
+            message.success('链接已复制');
+          } catch {
+            message.error('复制失败');
+          }
+        }}
+        onIframeLoad={onIframeLoad}
+        onIframeError={onIframeError}
+      />
 
       {/* 隐藏海报渲染容器（用于导出图片） */}
       <div style={{ position: 'fixed', left: '-9999px', top: '-9999px', zIndex: -9999 }}>

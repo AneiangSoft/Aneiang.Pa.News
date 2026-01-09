@@ -1,0 +1,2 @@
+/* NewsGrid 目前复用全局的 .news-grid 样式（定义在 App.css）。
+   如需进一步模块化，可把 .news-grid 相关样式迁移到这里。 */

@@ -1,0 +1,19 @@
+/* 收藏 Drawer：复用 App.css 里已有的 .fav-tools / .fav-btn 等全局样式即可 */
+
+.fav-list .ant-list-item a {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fav-list .ant-list-item a.is-read {
+  color: var(--text-secondary);
+  opacity: 0.72;
+}
+
+.fav-list .ant-list-item a.is-read:hover {
+  opacity: 1;
+  color: var(--primary);
+}

@@ -1,0 +1,156 @@
+/* ========== Reader Drawer（站内阅读） ========== */
+.reader-drawer .ant-drawer-content {
+  background: var(--bg-secondary);
+}
+
+.reader-drawer .ant-drawer-header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid color-mix(in srgb, var(--text-secondary) 22%, transparent);
+}
+
+.reader-drawer .ant-drawer-body {
+  padding: 0;
+  overflow: hidden; /* 只保留 iframe 页面自身滚动 */
+}
+
+.reader-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  border-bottom: 1px solid color-mix(in srgb, var(--text-secondary) 22%, transparent);
+}
+
+.reader-header-main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reader-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.reader-subtitle {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.reader-url {
+  max-width: min(56vw, 680px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.95;
+}
+
+.reader-loading-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 65%, transparent);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.reader-header-actions {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* 站内阅读 Header 右侧按钮：强制跟随主题色（antd 的 text button 默认可能不跟随） */
+.reader-header-actions .ant-btn,
+.reader-header-actions .ant-btn .anticon {
+  color: var(--text-secondary) !important;
+}
+
+.reader-header-actions .ant-btn:hover,
+.reader-header-actions .ant-btn:hover .anticon {
+  color: var(--primary) !important;
+}
+
+.reader-header-actions .ant-btn:disabled,
+.reader-header-actions .ant-btn:disabled .anticon {
+  color: color-mix(in srgb, var(--text-secondary) 70%, transparent) !important;
+}
+
+.reader-body {
+  height: calc(100vh - 64px); /* 预留 header */
+}
+
+.reader-iframe-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.reader-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  /* iframe 内网页通常是浅色，这里让容器底色跟随主题，减少突兀 */
+  background: var(--bg-secondary);
+}
+
+.reader-empty {
+  padding: 24px;
+}
+
+.reader-blocked {
+  height: 100%;
+  width: 100%;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  color: var(--text-primary);
+}
+
+.reader-blocked-title {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.reader-blocked-desc {
+  max-width: 720px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.reader-blocked-tip {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
