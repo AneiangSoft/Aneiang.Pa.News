@@ -136,6 +136,13 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+}
+
+.reader-blocked-tip {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .reader-body {
@@ -344,9 +351,10 @@ body {
 /* ========== Grid Layout ========== */
 .news-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  /* 桌面端：默认更丰富的布局密度 */
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 1.25rem;
-  max-width: 1440px;
+  max-width: 1560px;
   margin: 0 auto;
 }
 

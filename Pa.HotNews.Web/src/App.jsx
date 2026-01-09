@@ -537,12 +537,50 @@ function App() {
   const [readerItem, setReaderItem] = useState(null); // { url, title, source }
   const [readerKey, setReaderKey] = useState(0); // 用于强制 iframe 重新加载
   const [readerEmbedBlocked, setReaderEmbedBlocked] = useState(false);
+  // 最近阅读（最多 20 条）
+  // 说明：上一条/下一条已改为按“来源列表顺序”跳转，这里保留历史用于未来扩展（例如历史下拉）。
+  const [readerHistory, setReaderHistory] = useState([]);
+  void readerHistory;
 
   // 已知不支持 iframe 嵌入的来源：直接降级为“友好提示 + 新开原文”
   const NO_IFRAME_SOURCES = useMemo(
     () => new Set(['zhihu', 'baidu', 'douyin', 'toutiao', 'cnblog']),
     []
   );
+
+  const pushReaderHistory = ({ url, title, source }) => {
+    if (!url) return;
+    const src = String(source || '').toLowerCase();
+    setReaderHistory(prev => {
+      const next = [
+        { url, title: title || '', source: src, ts: Date.now() },
+        ...(prev || []).filter(x => x?.url && x.url !== url),
+      ];
+      return next.slice(0, 20);
+    });
+  };
+
+  const computeReaderNeighbors = ({ url, source }) => {
+    const src = String(source || '').toLowerCase();
+    if (!url || !src) return { prevItem: null, nextItem: null };
+
+    const q = query.trim().toLowerCase();
+    const listRaw = newsBySource?.[src]?.list || [];
+    const list = q
+      ? listRaw.filter(n => (n?.title || '').toLowerCase().includes(q))
+      : listRaw;
+
+    const idx = list.findIndex(x => x?.url === url);
+    if (idx < 0) return { prevItem: null, nextItem: null };
+
+    const prev = idx > 0 ? list[idx - 1] : null;
+    const next = idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null;
+
+    return {
+      prevItem: prev ? { url: prev.url, title: prev.title, source: src } : null,
+      nextItem: next ? { url: next.url, title: next.title, source: src } : null,
+    };
+  };
 
   const openReaderFromItem = ({ url, title, source }) => {
     if (!url) return;
@@ -558,6 +596,7 @@ function App() {
 
     setReaderEmbedBlocked(degraded);
     setReaderItem({ url, title, source: src });
+    pushReaderHistory({ url, title, source: src });
     setReaderKey(prev => prev + 1);
     setReaderOpen(true);
   };
@@ -1017,20 +1056,22 @@ function App() {
 
               if (successCards.length > 0 && !hasAnyMatch) {
                 return (
-                  <div style={{ padding: '60px 0' }}>
-                    <Empty
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      description={
-                        <div>
-                          <div style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 6 }}>
-                            没有找到与“{query.trim()}”相关的内容
+                  <div className="news-grid">
+                    <div style={{ gridColumn: '1 / -1', padding: '60px 0' }}>
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={
+                          <div>
+                            <div style={{ fontSize: 14, color: 'var(--text-primary)', marginBottom: 6 }}>
+                              没有找到与“{query.trim()}”相关的内容
+                            </div>
+                            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                              试试更换关键词，或清空搜索
+                            </div>
                           </div>
-                          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                            试试更换关键词，或清空搜索
-                          </div>
-                        </div>
-                      }
-                    />
+                        }
+                      />
+                    </div>
                   </div>
                 );
               }
@@ -1434,6 +1475,49 @@ function App() {
           </div>
 
           <div className="reader-header-actions">
+            {(() => {
+              const { prevItem, nextItem } = computeReaderNeighbors({
+                url: readerItem?.url,
+                source: readerItem?.source,
+              });
+
+              return (
+                <>
+                  <Tooltip title="上一条">
+                    <Button
+                      type="text"
+                      onClick={() => {
+                        if (!prevItem) return;
+                        setReaderEmbedBlocked(false);
+                        setReaderItem(prevItem);
+                        pushReaderHistory(prevItem);
+                        setReaderKey(prev => prev + 1);
+                      }}
+                      disabled={!prevItem}
+                    >
+                      上一条
+                    </Button>
+                  </Tooltip>
+
+                  <Tooltip title="下一条">
+                    <Button
+                      type="text"
+                      onClick={() => {
+                        if (!nextItem) return;
+                        setReaderEmbedBlocked(false);
+                        setReaderItem(nextItem);
+                        pushReaderHistory(nextItem);
+                        setReaderKey(prev => prev + 1);
+                      }}
+                      disabled={!nextItem}
+                    >
+                      下一条
+                    </Button>
+                  </Tooltip>
+                </>
+              );
+            })()}
+
             <Tooltip title="关闭">
               <Button type="text" onClick={() => setReaderOpen(false)}>
                 关闭
@@ -1495,6 +1579,9 @@ function App() {
                 <div className="reader-blocked-desc">
                   目标网站可能设置了安全策略（X-Frame-Options / CSP），禁止被嵌入到 iframe。
                   你可以点击下方按钮在新标签页打开原文。
+                  <div className="reader-blocked-tip">
+                    小技巧：也可以按住 Ctrl（macOS 为 ⌘）再点击标题，快速在新标签页打开。
+                  </div>
                 </div>
 
                 <Space style={{ marginTop: 16 }}>
