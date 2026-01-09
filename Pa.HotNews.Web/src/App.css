@@ -123,6 +123,19 @@ body {
   color: var(--text-secondary);
 }
 
+.reader-loading-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 65%, transparent);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
 .reader-url {
   max-width: min(56vw, 680px);
   overflow: hidden;
@@ -174,7 +187,24 @@ body {
   width: 100%;
   height: 100%;
   border: 0;
-  background: #fff;
+  /* iframe 内网页通常是浅色，这里让容器底色跟随主题，减少突兀 */
+  background: var(--bg-secondary);
+}
+
+.reader-loading-mask {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--bg-secondary) 18%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 3;
+}
+
+.reader-iframe-container {
+  position: relative;
 }
 
 .reader-empty {

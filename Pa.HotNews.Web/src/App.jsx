@@ -9,6 +9,7 @@ import { nodeToPngBlob, downloadBlob } from './utils/poster';
 import { getSiteOrigin, getSiteHost, toAbsoluteUrl } from './utils/site';
 import { Grid } from 'antd';
 import PosterModal from './components/PosterModal';
+import ReaderDrawer from './components/ReaderDrawer';
 import {
   Spin,
   Dropdown,
@@ -43,8 +44,6 @@ import {
   SettingOutlined,
   ShareAltOutlined,
   CopyOutlined,
-  LinkOutlined,
-  ReloadOutlined,
   ArrowUpOutlined as UpOutlined,
   ArrowDownOutlined as DownOutlined,
 } from '@ant-design/icons';
@@ -537,7 +536,7 @@ function App() {
   const [readerItem, setReaderItem] = useState(null); // { url, title, source }
   const [readerKey, setReaderKey] = useState(0); // 用于强制 iframe 重新加载
   const [readerEmbedBlocked, setReaderEmbedBlocked] = useState(false);
-  const [readerLoading, setReaderLoading] = useState(false);
+  const [readerHeaderLoading, setReaderHeaderLoading] = useState(false);
 
   // 最近阅读（最多 20 条）
   // 说明：上一条/下一条已改为按“来源列表顺序”跳转，这里保留历史用于未来扩展（例如历史下拉）。
@@ -597,9 +596,9 @@ function App() {
     const degraded = NO_IFRAME_SOURCES.has(src);
 
     setReaderEmbedBlocked(degraded);
+    setReaderHeaderLoading(!degraded);
     setReaderItem({ url, title, source: src });
     pushReaderHistory({ url, title, source: src });
-    setReaderLoading(!degraded);
     setReaderKey(prev => prev + 1);
     setReaderOpen(true);
   };
@@ -1442,198 +1441,73 @@ function App() {
       </BackTop>
 
       {/* 站内阅读抽屉 */}
-      <Drawer
-        className="reader-drawer"
-        title={null}
-        closeIcon={null}
-        placement="bottom"
-        height="100%"
-        open={readerOpen}
-        onClose={() => setReaderOpen(false)}
-        afterOpenChange={(open) => {
-          if (!open) {
-            setReaderEmbedBlocked(false);
-            setReaderKey(prev => prev + 1);
-          }
-        }}
-        styles={{
-          header: { display: 'none' },
-          body: { padding: 0 },
-        }}
-      >
-        {/* 自定义阅读 Header */}
-        <div className="reader-header">
-          <div className="reader-header-main">
-            <div className="reader-title" title={readerItem?.title || ''}>
-              {readerItem?.title || '站内阅读'}
-            </div>
-            <div className="reader-subtitle">
-              <span className="reader-source">
-                {readerItem?.source ? getChineseSourceName(readerItem.source) : ''}
-              </span>
-              {readerItem?.url ? (
-                <span className="reader-url" title={readerItem.url}>{readerItem.url}</span>
-              ) : null}
-            </div>
-          </div>
+      {(() => {
+        const { prevItem, nextItem } = computeReaderNeighbors({
+          url: readerItem?.url,
+          source: readerItem?.source,
+        });
 
-          <div className="reader-header-actions">
-            {(() => {
-              const { prevItem, nextItem } = computeReaderNeighbors({
-                url: readerItem?.url,
-                source: readerItem?.source,
-              });
-
-              return (
-                <>
-                  <Tooltip title="上一条">
-                    <Button
-                      type="text"
-                      onClick={() => {
-                        if (!prevItem) return;
-                        setReaderEmbedBlocked(false);
-                        setReaderItem(prevItem);
-                        pushReaderHistory(prevItem);
-                        setReaderKey(prev => prev + 1);
-                      }}
-                      disabled={!prevItem}
-                    >
-                      上一条
-                    </Button>
-                  </Tooltip>
-
-                  <Tooltip title="下一条">
-                    <Button
-                      type="text"
-                      onClick={() => {
-                        if (!nextItem) return;
-                        setReaderEmbedBlocked(false);
-                        setReaderItem(nextItem);
-                        pushReaderHistory(nextItem);
-                        setReaderKey(prev => prev + 1);
-                      }}
-                      disabled={!nextItem}
-                    >
-                      下一条
-                    </Button>
-                  </Tooltip>
-                </>
-              );
-            })()}
-
-            <Tooltip title="关闭">
-              <Button type="text" onClick={() => setReaderOpen(false)}>
-                关闭
-              </Button>
-            </Tooltip>
-
-            <Tooltip title="重新加载">
-              <Button
-                type="text"
-                icon={<ReloadOutlined />}
-                onClick={() => {
-                  setReaderEmbedBlocked(false);
-                  setReaderKey(prev => prev + 1);
-                }}
-              />
-            </Tooltip>
-
-            <Tooltip title="在新标签页中打开">
-              <Button
-                type="text"
-                icon={<LinkOutlined />}
-                onClick={() => {
-                  if (readerItem?.url) {
-                    window.open(readerItem.url, '_blank', 'noopener,noreferrer');
-                  }
-                }}
-              />
-            </Tooltip>
-
-            <Tooltip title="复制链接">
-              <Button
-                type="text"
-                icon={<CopyOutlined />}
-                onClick={async () => {
-                  if (!readerItem?.url) return;
-                  try {
-                    await navigator.clipboard.writeText(readerItem.url);
-                    message.success('链接已复制');
-                  } catch {
-                    message.error('复制失败');
-                  }
-                }}
-              />
-            </Tooltip>
-          </div>
-        </div>
-        <div className="reader-body">
-          {readerItem?.url ? (
-            <div className="reader-iframe-container">
-            {/*
-              说明：很多站点会通过 X-Frame-Options / CSP 禁止被 iframe 嵌入。
-              这种情况下浏览器通常不会触发 onError。
-              这里采用“加载超时兜底”的方式：若一定时间内未触发 onLoad，则给出友好提示。
-            */}
-
-            {readerEmbedBlocked ? (
-              <div className="reader-blocked">
-                <div className="reader-blocked-title">该站点不支持站内阅读</div>
-                <div className="reader-blocked-desc">
-                  目标网站可能设置了安全策略（X-Frame-Options / CSP），禁止被嵌入到 iframe。
-                  你可以点击下方按钮在新标签页打开原文。
-                  <div className="reader-blocked-tip">
-                    小技巧：也可以按住 Ctrl（macOS 为 ⌘）再点击标题，快速在新标签页打开。
-                  </div>
-                </div>
-
-                <Space style={{ marginTop: 16 }}>
-                  <Button
-                    type="primary"
-                    icon={<LinkOutlined />}
-                    onClick={() => window.open(readerItem.url, '_blank', 'noopener,noreferrer')}
-                  >
-                    在新标签页打开
-                  </Button>
-                  <Button
-                    icon={<ReloadOutlined />}
-                    onClick={() => {
-                      setReaderEmbedBlocked(false);
-                      setReaderLoading(true);
-                      setReaderKey(prev => prev + 1);
-                    }}
-                  >
-                    重试
-                  </Button>
-                </Space>
-              </div>
-            ) : (
-              <iframe
-                key={readerKey}
-                src={readerItem.url}
-                title={readerItem.title || '站内阅读'}
-                className="reader-iframe"
-                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-                allowFullScreen
-                onLoad={() => {
-                  window.clearTimeout(window.__readerTimeout);
-                  setReaderLoading(false);
-                }}
-                onError={(e) => {
-                  console.error('Iframe 加载失败:', e);
-                  setReaderLoading(false);
-                  setReaderEmbedBlocked(true);
-                }}
-              />
-            )}
-          </div>
-        ) : (
-          <div className="reader-empty">
-            <Empty description="未选择文章" />
-          </div>
-          )}
-        </div>
-      </Drawer>
+        return (
+          <ReaderDrawer
+            open={readerOpen}
+            item={readerItem}
+            iframeKey={readerKey}
+            embedBlocked={readerEmbedBlocked}
+            loading={false}
+            getChineseSourceName={getChineseSourceName}
+            headerLoading={readerHeaderLoading}
+            prevItem={prevItem}
+            nextItem={nextItem}
+            onPrev={() => {
+              if (!prevItem) return;
+              setReaderEmbedBlocked(false);
+              setReaderHeaderLoading(true);
+              setReaderItem(prevItem);
+              pushReaderHistory(prevItem);
+              setReaderKey(prev => prev + 1);
+            }}
+            onNext={() => {
+              if (!nextItem) return;
+              setReaderEmbedBlocked(false);
+              setReaderHeaderLoading(true);
+              setReaderItem(nextItem);
+              pushReaderHistory(nextItem);
+              setReaderKey(prev => prev + 1);
+            }}
+            onClose={() => {
+              setReaderOpen(false);
+              setReaderEmbedBlocked(false);
+              setReaderHeaderLoading(false);
+            }}
+            onReload={() => {
+              setReaderEmbedBlocked(false);
+              setReaderHeaderLoading(true);
+              setReaderKey(prev => prev + 1);
+            }}
+            onOpenInNewTab={() => {
+              if (readerItem?.url) window.open(readerItem.url, '_blank', 'noopener,noreferrer');
+            }}
+            onCopyLink={async () => {
+              if (!readerItem?.url) return;
+              try {
+                await navigator.clipboard.writeText(readerItem.url);
+                message.success('链接已复制');
+              } catch {
+                message.error('复制失败');
+              }
+            }}
+            onIframeLoad={() => {
+              window.clearTimeout(window.__readerTimeout);
+              setReaderHeaderLoading(false);
+            }}
+            onIframeError={(e) => {
+              console.error('Iframe 加载失败:', e);
+              setReaderHeaderLoading(false);
+              setReaderEmbedBlocked(true);
+            }}
+          />
+        );
+      })()}
 
       {/* 隐藏海报渲染容器（用于导出图片） */}
       <div style={{ position: 'fixed', left: '-9999px', top: '-9999px', zIndex: -9999 }}>
