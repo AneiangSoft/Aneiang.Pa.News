@@ -1293,7 +1293,7 @@ function App() {
             title={posterData.title}
             items={posterData.items}
             updatedTimeText={posterData.updatedTime ? getFullTimeString(posterData.updatedTime) : ''}
-            siteText={getSiteHost()}
+            siteText={siteCfg?.title || 'Aneiang 热榜聚合'}
             theme={theme}
             qrText={toAbsoluteUrl('/')}
           />
@@ -1313,7 +1313,7 @@ function App() {
             title={posterData.title}
             items={posterData.items}
             updatedTimeText={posterData.updatedTime ? getFullTimeString(posterData.updatedTime) : ''}
-            siteText={getSiteHost()}
+            siteText={siteCfg?.title || 'Aneiang 热榜聚合'}
             theme={theme}
             qrText={toAbsoluteUrl('/')}
             size="mobile"
