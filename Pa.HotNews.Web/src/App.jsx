@@ -452,11 +452,29 @@ function App() {
   }, [theme]);
 
   // 持久化“打开方式”
+  // 只在“用户刚刚切换到站内阅读”的那个瞬间提示；刷新页面不会提示
+  const prevLinkBehaviorRef = useRef(linkBehavior);
   useEffect(() => {
+    const prev = prevLinkBehaviorRef.current;
+    prevLinkBehaviorRef.current = linkBehavior;
+
     try {
       localStorage.setItem(LINK_BEHAVIOR_KEY, linkBehavior);
     } catch {
       // ignore
+    }
+
+    // 仅当从非 in-app 切到 in-app 时提示（刷新页面时 prev===current，不会提示）
+    if (prev !== 'in-app' && linkBehavior === 'in-app') {
+      const blockedSet = new Set(['zhihu', 'baidu', 'douyin', 'toutiao', 'cnblog']);
+      const blocked = Array.from(blockedSet)
+        .map(s => getChineseSourceName(s))
+        .join(' / ');
+
+      message.info(
+        `已切换为站内阅读。注意：${blocked} 平台可能无法站内打开，可按 Ctrl（macOS 为 ⌘）+ 鼠标点击标题快速跳转新标签页。`,
+        4
+      );
     }
   }, [linkBehavior]);
 
