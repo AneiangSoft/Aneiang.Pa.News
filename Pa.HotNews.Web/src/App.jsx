@@ -544,6 +544,7 @@ function App() {
             formatTime,
             highlightText,
             retrySource,
+            noIframeSources: NO_IFRAME_SOURCES,
           }}
         />
       </main>

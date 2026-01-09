@@ -1,1 +1,30 @@
 /* SourceCard 主要复用 App.css 中的 card/list 样式，这里留作扩展 */
+
+.card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.card-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-title-tag {
+  flex: 0 0 auto;
+}
+
+/* 更低存在感的提示（避免太显眼） */
+.card-title-tag.is-subtle {
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 22%, transparent) !important;
+  color: var(--text-secondary) !important;
+}
+
+.card-title-tag.is-subtle .anticon {
+  color: var(--text-secondary) !important;
+}

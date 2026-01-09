@@ -1,5 +1,12 @@
-import { Card, List, Button, Tooltip, Space, Spin, Empty } from 'antd';
-import { SyncOutlined, CopyOutlined, ShareAltOutlined, StarOutlined, StarFilled } from '@ant-design/icons';
+import { Card, List, Button, Tooltip, Space, Spin, Empty, Tag } from 'antd';
+import {
+  SyncOutlined,
+  CopyOutlined,
+  ShareAltOutlined,
+  StarOutlined,
+  StarFilled,
+  StopOutlined,
+} from '@ant-design/icons';
 
 import './SourceCard.css';
 
@@ -25,11 +32,26 @@ function SourceCard({
   formatTime,
   highlightText,
   retrySource,
+  // 是否支持站内阅读（iframe）
+  iframeSupported = true,
 }) {
+  const shouldOpenInNewTab = linkBehavior === 'new-tab' || (linkBehavior === 'in-app' && !iframeSupported);
+
   return (
     <Card
       key={src}
-      title={title}
+      title={
+        <span className="card-title">
+          <span className="card-title-text">{title}</span>
+          {linkBehavior === 'in-app' && !iframeSupported ? (
+            <Tooltip title="该来源可能无法站内阅读，点击将直接在新标签页打开（也可 Ctrl/⌘ + 点击标题）">
+              <Tag className="card-title-tag is-subtle" icon={<StopOutlined />}>
+                站内受限
+              </Tag>
+            </Tooltip>
+          ) : null}
+        </span>
+      }
       extra={
         <span className="card-extra">
           {status === 'error' ? (
@@ -118,17 +140,18 @@ function SourceCard({
                 >
                   <a
                     href={item.url}
-                    target={linkBehavior === 'new-tab' ? '_blank' : undefined}
-                    rel={linkBehavior === 'new-tab' ? 'noopener noreferrer' : undefined}
+                    target={shouldOpenInNewTab ? '_blank' : undefined}
+                    rel={shouldOpenInNewTab ? 'noopener noreferrer' : undefined}
                     className={readSet.has(item.url) ? 'is-read' : ''}
                     onClick={e => {
                       // 当选择“站内阅读”时：支持 Ctrl/⌘ + 点击新标签页打开
                       const openInNewTab = e.ctrlKey || e.metaKey;
 
-                      // 若用户当前偏好就是“新标签页打开”，或按住 Ctrl/⌘：强制新标签页打开
-                      if (linkBehavior === 'new-tab' || openInNewTab) {
-                        // 某些站点/环境下默认行为可能不会新开，这里显式 window.open 兜底
-                        // 同时阻止默认，避免被浏览器当成同页跳转
+                      // 1) 用户偏好为“新标签页”
+                      // 2) 用户按住 Ctrl/⌘
+                      // 3) 当前来源不支持站内阅读（站内模式下）
+                      // 以上任一情况：都强制新标签页打开
+                      if (shouldOpenInNewTab || openInNewTab) {
                         e.preventDefault();
                         window.open(item.url, '_blank', 'noopener,noreferrer');
                         return;

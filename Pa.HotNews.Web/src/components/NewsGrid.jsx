@@ -19,6 +19,7 @@ function NewsGrid({
   formatTime,
   highlightText,
   retrySource,
+  noIframeSources,
 }) {
   const q = (query || '').trim().toLowerCase();
 
@@ -32,6 +33,8 @@ function NewsGrid({
       ? (news || []).filter(n => (n?.title || '').toLowerCase().includes(q))
       : news;
 
+    const iframeSupported = !(noIframeSources && noIframeSources.has(String(src).toLowerCase()));
+
     return {
       src,
       status,
@@ -40,6 +43,7 @@ function NewsGrid({
       errorMsg,
       filtered,
       title: getChineseSourceName(src),
+      iframeSupported,
     };
   });
 
@@ -76,7 +80,7 @@ function NewsGrid({
       {cards
         // 搜索时：只展示“有匹配数据”的卡片（避免一堆空卡片）
         .filter(x => (q ? x.status !== 'success' || (x.filtered?.length ?? 0) > 0 : true))
-        .map(({ src, status, news, updatedTime, errorMsg, filtered, title }) => (
+        .map(({ src, status, news, updatedTime, errorMsg, filtered, title, iframeSupported }) => (
           <SourceCard
             key={src}
             src={src}
@@ -87,6 +91,7 @@ function NewsGrid({
             updatedTime={updatedTime}
             errorMsg={errorMsg}
             q={q}
+            iframeSupported={iframeSupported}
             readSet={readSet}
             linkBehavior={linkBehavior}
             onOpenItem={openReaderFromItem}
