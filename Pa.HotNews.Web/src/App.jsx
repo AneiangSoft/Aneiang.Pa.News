@@ -43,6 +43,8 @@ import {
   SettingOutlined,
   ShareAltOutlined,
   CopyOutlined,
+  LinkOutlined,
+  ReloadOutlined,
   ArrowUpOutlined as UpOutlined,
   ArrowDownOutlined as DownOutlined,
 } from '@ant-design/icons';
@@ -159,6 +161,18 @@ function App() {
   };
 
   const [theme, setTheme] = useState(getDefaultTheme);
+
+  // 打开方式：in-app (站内阅读) | new-tab (新标签页)
+  const LINK_BEHAVIOR_KEY = 'linkBehaviorV1';
+  const [linkBehavior, setLinkBehavior] = useState(() => {
+    try {
+      const saved = localStorage.getItem(LINK_BEHAVIOR_KEY);
+      if (saved === 'in-app' || saved === 'new-tab') return saved;
+    } catch {
+      // ignore
+    }
+    return 'new-tab'; // 默认新标签页打开
+  });
 
   // URL 参数指定的“仅显示来源”（白名单）。null 表示不限制。
   const [sourceWhitelist, setSourceWhitelist] = useState(null);
@@ -437,6 +451,15 @@ function App() {
     }
   }, [theme]);
 
+  // 持久化“打开方式”
+  useEffect(() => {
+    try {
+      localStorage.setItem(LINK_BEHAVIOR_KEY, linkBehavior);
+    } catch {
+      // ignore
+    }
+  }, [linkBehavior]);
+
   // 持久化来源配置
   useEffect(() => {
     try {
@@ -490,6 +513,36 @@ function App() {
 
   // 移动端：导航下拉菜单
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // 站内阅读（底部全屏 Drawer + iframe）
+  const [readerOpen, setReaderOpen] = useState(false);
+  const [readerItem, setReaderItem] = useState(null); // { url, title, source }
+  const [readerKey, setReaderKey] = useState(0); // 用于强制 iframe 重新加载
+  const [readerEmbedBlocked, setReaderEmbedBlocked] = useState(false);
+
+  // 已知不支持 iframe 嵌入的来源：直接降级为“友好提示 + 新开原文”
+  const NO_IFRAME_SOURCES = useMemo(
+    () => new Set(['zhihu', 'baidu', 'douyin', 'toutiao', 'cnblog']),
+    []
+  );
+
+  const openReaderFromItem = ({ url, title, source }) => {
+    if (!url) return;
+
+    // 用户选择“新标签页打开”则直接外跳
+    if (linkBehavior === 'new-tab') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    const src = String(source || '').toLowerCase();
+    const degraded = NO_IFRAME_SOURCES.has(src);
+
+    setReaderEmbedBlocked(degraded);
+    setReaderItem({ url, title, source: src });
+    setReaderKey(prev => prev + 1);
+    setReaderOpen(true);
+  };
 
   // 站点配置（页脚等）
   const [siteCfg, setSiteCfg] = useState({});
@@ -784,6 +837,17 @@ function App() {
               />
             </Tooltip>
 
+            <Tooltip title="链接打开方式（站内阅读 / 新标签页）">
+              <Segmented
+                value={linkBehavior}
+                onChange={setLinkBehavior}
+                options={[
+                  { label: '站内阅读', value: 'in-app' },
+                  { label: '新标签页', value: 'new-tab' },
+                ]}
+              />
+            </Tooltip>
+
             <Tooltip title="复制当前筛选链接">
               <Button type="default" icon={<CopyOutlined />} onClick={copyFilterLink} />
             </Tooltip>
@@ -1052,10 +1116,26 @@ function App() {
                                   >
                                     <a
                                       href={item.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
                                       className={readSet.has(item.url) ? 'is-read' : ''}
-                                      onClick={() => markAsRead(item.url)}
+                                      onClick={e => {
+                                        // 当选择“站内阅读”时：支持 Ctrl/⌘ + 点击新标签页打开
+                                        // - Windows/Linux: Ctrl + Click
+                                        // - macOS: Command(⌘) + Click
+                                        const openInNewTab = e.ctrlKey || e.metaKey;
+
+                                        // 若用户当前偏好就是“新标签页打开”，或者按住 Ctrl/⌘，则交给浏览器默认行为
+                                        if (linkBehavior === 'new-tab' || openInNewTab) {
+                                          return;
+                                        }
+
+                                        e.preventDefault();
+                                        markAsRead(item.url);
+                                        openReaderFromItem({
+                                          url: item.url,
+                                          title: item.title,
+                                          source: src,
+                                        });
+                                      }}
                                     >
                                       {highlightText(item.title, query)}
                                     </a>
@@ -1228,10 +1308,24 @@ function App() {
                     >
                       <a
                         href={fav.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className={readSet.has(fav.url) ? 'is-read' : ''}
-                        onClick={() => markAsRead(fav.url)}
+                        onClick={e => {
+                          // 当选择“站内阅读”时：支持 Ctrl/⌘ + 点击新标签页打开
+                          const openInNewTab = e.ctrlKey || e.metaKey;
+
+                          // 若用户当前偏好就是“新标签页打开”，或者按住 Ctrl/⌘，则交给浏览器默认行为
+                          if (linkBehavior === 'new-tab' || openInNewTab) {
+                            return;
+                          }
+
+                          e.preventDefault();
+                          markAsRead(fav.url);
+                          openReaderFromItem({
+                            url: fav.url,
+                            title: fav.title,
+                            source: fav.source,
+                          });
+                        }}
                       >
                         {highlightText(fav.title, favQuery)}
                       </a>
@@ -1284,6 +1378,154 @@ function App() {
           <ArrowUpOutlined />
         </div>
       </BackTop>
+
+      {/* 站内阅读抽屉 */}
+      <Drawer
+        className="reader-drawer"
+        title={null}
+        closeIcon={null}
+        placement="bottom"
+        height="100%"
+        open={readerOpen}
+        onClose={() => setReaderOpen(false)}
+        afterOpenChange={(open) => {
+          if (!open) {
+            setReaderEmbedBlocked(false);
+            setReaderKey(prev => prev + 1);
+          }
+        }}
+        styles={{
+          header: { display: 'none' },
+          body: { padding: 0 },
+        }}
+      >
+        {/* 自定义阅读 Header */}
+        <div className="reader-header">
+          <div className="reader-header-main">
+            <div className="reader-title" title={readerItem?.title || ''}>
+              {readerItem?.title || '站内阅读'}
+            </div>
+            <div className="reader-subtitle">
+              <span className="reader-source">
+                {readerItem?.source ? getChineseSourceName(readerItem.source) : ''}
+              </span>
+              {readerItem?.url ? (
+                <span className="reader-url" title={readerItem.url}>{readerItem.url}</span>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="reader-header-actions">
+            <Tooltip title="关闭">
+              <Button type="text" onClick={() => setReaderOpen(false)}>
+                关闭
+              </Button>
+            </Tooltip>
+
+            <Tooltip title="重新加载">
+              <Button
+                type="text"
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  setReaderEmbedBlocked(false);
+                  setReaderKey(prev => prev + 1);
+                }}
+              />
+            </Tooltip>
+
+            <Tooltip title="在新标签页中打开">
+              <Button
+                type="text"
+                icon={<LinkOutlined />}
+                onClick={() => {
+                  if (readerItem?.url) {
+                    window.open(readerItem.url, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+              />
+            </Tooltip>
+
+            <Tooltip title="复制链接">
+              <Button
+                type="text"
+                icon={<CopyOutlined />}
+                onClick={async () => {
+                  if (!readerItem?.url) return;
+                  try {
+                    await navigator.clipboard.writeText(readerItem.url);
+                    message.success('链接已复制');
+                  } catch {
+                    message.error('复制失败');
+                  }
+                }}
+              />
+            </Tooltip>
+          </div>
+        </div>
+        <div className="reader-body">
+          {readerItem?.url ? (
+            <div className="reader-iframe-container">
+            {/*
+              说明：很多站点会通过 X-Frame-Options / CSP 禁止被 iframe 嵌入。
+              这种情况下浏览器通常不会触发 onError。
+              这里采用“加载超时兜底”的方式：若一定时间内未触发 onLoad，则给出友好提示。
+            */}
+
+            {readerEmbedBlocked ? (
+              <div className="reader-blocked">
+                <div className="reader-blocked-title">该站点不支持站内阅读</div>
+                <div className="reader-blocked-desc">
+                  目标网站可能设置了安全策略（X-Frame-Options / CSP），禁止被嵌入到 iframe。
+                  你可以点击下方按钮在新标签页打开原文。
+                </div>
+
+                <Space style={{ marginTop: 16 }}>
+                  <Button
+                    type="primary"
+                    icon={<LinkOutlined />}
+                    onClick={() => window.open(readerItem.url, '_blank', 'noopener,noreferrer')}
+                  >
+                    在新标签页打开
+                  </Button>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={() => {
+                      setReaderEmbedBlocked(false);
+                      setReaderLoading(true);
+                      setReaderKey(prev => prev + 1);
+                    }}
+                  >
+                    重试
+                  </Button>
+                </Space>
+              </div>
+            ) : (
+              <iframe
+                key={readerKey}
+                src={readerItem.url}
+                title={readerItem.title || '站内阅读'}
+                className="reader-iframe"
+                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                allowFullScreen
+                onLoad={() => {
+                  window.clearTimeout(window.__readerTimeout);
+                  setReaderLoading(false);
+                }}
+                onError={(e) => {
+                  console.error('Iframe 加载失败:', e);
+                  setReaderLoading(false);
+                  setReaderEmbedBlocked(true);
+                }}
+              />
+            )}
+          </div>
+        ) : (
+          <div className="reader-empty">
+            <Empty description="未选择文章" />
+          </div>
+          )}
+        </div>
+      </Drawer>
 
       {/* 隐藏海报渲染容器（用于导出图片） */}
       <div style={{ position: 'fixed', left: '-9999px', top: '-9999px', zIndex: -9999 }}>
