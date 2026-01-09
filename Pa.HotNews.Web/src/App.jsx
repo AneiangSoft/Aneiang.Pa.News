@@ -153,7 +153,7 @@ function App() {
 
   // 打开方式：in-app (站内阅读) | new-tab (新标签页)
   const LINK_BEHAVIOR_KEY = 'linkBehaviorV1';
-  const [linkBehavior, setLinkBehavior] = useLocalStorageState(LINK_BEHAVIOR_KEY, () => 'new-tab');
+  const [linkBehavior, setLinkBehavior] = useLocalStorageState(LINK_BEHAVIOR_KEY, () => 'in-app');
 
   // URL 参数指定的“仅显示来源”（白名单）。null 表示不限制。
   const [sourceWhitelist, setSourceWhitelist] = useState(null);
