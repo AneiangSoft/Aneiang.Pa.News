@@ -537,6 +537,8 @@ function App() {
   const [readerItem, setReaderItem] = useState(null); // { url, title, source }
   const [readerKey, setReaderKey] = useState(0); // 用于强制 iframe 重新加载
   const [readerEmbedBlocked, setReaderEmbedBlocked] = useState(false);
+  const [readerLoading, setReaderLoading] = useState(false);
+
   // 最近阅读（最多 20 条）
   // 说明：上一条/下一条已改为按“来源列表顺序”跳转，这里保留历史用于未来扩展（例如历史下拉）。
   const [readerHistory, setReaderHistory] = useState([]);
@@ -597,6 +599,7 @@ function App() {
     setReaderEmbedBlocked(degraded);
     setReaderItem({ url, title, source: src });
     pushReaderHistory({ url, title, source: src });
+    setReaderLoading(!degraded);
     setReaderKey(prev => prev + 1);
     setReaderOpen(true);
   };

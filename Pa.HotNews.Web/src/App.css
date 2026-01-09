@@ -139,6 +139,22 @@ body {
   flex-wrap: wrap;
 }
 
+/* 站内阅读 Header 右侧按钮：强制跟随主题色（antd 的 text button 默认可能不跟随） */
+.reader-header-actions .ant-btn,
+.reader-header-actions .ant-btn .anticon {
+  color: var(--text-secondary) !important;
+}
+
+.reader-header-actions .ant-btn:hover,
+.reader-header-actions .ant-btn:hover .anticon {
+  color: var(--primary) !important;
+}
+
+.reader-header-actions .ant-btn:disabled,
+.reader-header-actions .ant-btn:disabled .anticon {
+  color: color-mix(in srgb, var(--text-secondary) 70%, transparent) !important;
+}
+
 .reader-blocked-tip {
   margin-top: 10px;
   font-size: 12px;
