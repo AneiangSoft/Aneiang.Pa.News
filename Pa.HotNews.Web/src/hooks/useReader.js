@@ -51,6 +51,17 @@ export function useReader({ linkBehavior, noIframeSources, query, newsBySource }
     ({ url, title, source }) => {
       if (!url) return;
 
+      // 移动端强制“新标签页打开”，避免站内阅读在手机上的体验问题
+      if (typeof window !== 'undefined') {
+        const isMobileByViewport = window.matchMedia && window.matchMedia('(max-width: 991.98px)').matches;
+        const isMobileByUA = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+        const isMobile = isMobileByViewport || isMobileByUA;
+        if (isMobile) {
+          window.open(url, '_blank', 'noopener,noreferrer');
+          return;
+        }
+      }
+
       // 用户选择“新标签页打开”则直接外跳
       if (linkBehavior === 'new-tab') {
         window.open(url, '_blank', 'noopener,noreferrer');
