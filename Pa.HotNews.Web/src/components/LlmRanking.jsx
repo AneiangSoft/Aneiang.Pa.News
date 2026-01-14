@@ -15,6 +15,7 @@ import {
   Tooltip,
 } from 'antd';
 import {
+  CameraOutlined,
   ClockCircleOutlined,
   DollarOutlined,
   SearchOutlined,
@@ -23,6 +24,9 @@ import {
   TrophyOutlined,
 } from '@ant-design/icons';
 import { getLlmModelsRanking } from '../services/api';
+import { nodeToPngBlob, downloadBlob } from '../utils/poster';
+import Poster from './Poster';
+import PosterModal from './PosterModal';
 import './LlmRanking.css';
 
 const { useBreakpoint } = Grid;
@@ -59,7 +63,7 @@ const ScoreCell = ({ value }) => {
   );
 };
 
-const LlmRanking = () => {
+const LlmRanking = ({ siteTitle, theme = 'dark' }) => {
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
@@ -81,6 +85,37 @@ const LlmRanking = () => {
     // 当屏幕尺寸变化时，自动切换默认模式
     setColumnMode(isMobile ? 'compact' : 'full');
   }, [isMobile]);
+
+  // 海报
+  const posterRef = useRef();
+  const [posterVisible, setPosterVisible] = useState(false);
+  const [posterLoading, setPosterLoading] = useState(false);
+
+  const handleGeneratePoster = () => {
+    setPosterVisible(true);
+  };
+
+  const handleDownloadPoster = async () => {
+    if (!posterRef.current) return;
+    setPosterLoading(true);
+    try {
+      const themeBgMap = {
+        light: '#f6f7fb',
+        warm: '#12110f',
+        dark: '#0b1220',
+      };
+
+      const blob = await nodeToPngBlob(posterRef.current, {
+        pixelRatio: 2,
+        backgroundColor: themeBgMap[theme] || themeBgMap.dark,
+      });
+      await downloadBlob(blob, `llm-ranking-poster-${theme || 'dark'}-${Date.now()}.png`);
+    } catch (e) {
+      console.error('生成海报失败', e);
+    } finally {
+      setPosterLoading(false);
+    }
+  };
 
   const filteredData = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -294,6 +329,17 @@ const LlmRanking = () => {
     };
   }, [data]);
 
+  const posterItems = useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    // 按智能指数排序
+    const sorted = [...data].sort(
+      (a, b) =>
+        (num(b?.evaluations?.artificial_analysis_intelligence_index) ?? -Infinity) -
+        (num(a?.evaluations?.artificial_analysis_intelligence_index) ?? -Infinity)
+    );
+    return sorted.slice(0, 10).map(item => ({ ...item, title: item.name, url: item.slug }));
+  }, [data]);
+
   const fetchData = async () => {
     setLoading(true);
     setError(null);
@@ -425,6 +471,11 @@ const LlmRanking = () => {
                 刷新
               </Button>
             </Tooltip>
+            <Tooltip title="生成分享海报">
+              <Button icon={<CameraOutlined />} onClick={handleGeneratePoster}>
+                生成海报
+              </Button>
+            </Tooltip>
           </Space>
         </div>
 
@@ -526,6 +577,103 @@ const LlmRanking = () => {
           </div>
         ) : null}
       </Card>
+
+      <PosterModal
+        open={posterVisible}
+        onClose={() => setPosterVisible(false)}
+        onDownload={handleDownloadPoster}
+        downloading={posterLoading}
+        width={540}
+      >
+        <Poster
+          ref={posterRef}
+          title="大语言模型排行榜"
+          updatedTimeText={new Date().toLocaleString()}
+          items={posterItems}
+          siteText={siteTitle || 'Aneiang 热榜聚合'}
+          qrText={window.location.href}
+          theme={theme}
+          size="mobile"
+          renderItem={(it, _idx, themeTokens) => {
+            const score = num(it?.evaluations?.artificial_analysis_intelligence_index);
+            const price = num(it?.pricing?.price_1m_blended_3_to_1);
+            const speed = num(it?.median_output_tokens_per_second);
+
+            return (
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, minWidth: 0, width: '100%' }}>
+                  {/* 左侧：模型信息 */}
+                  <div style={{ flex: '1 1 auto', minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 16,
+                        lineHeight: 1.32,
+                        fontWeight: 750,
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {it?.name || it?.title || '-'}
+                    </div>
+
+                    {(it?.model_creator?.name || it?.release_date) ? (
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: 10,
+                          flexWrap: 'wrap',
+                          alignItems: 'center',
+                          fontSize: 12,
+                          color: themeTokens.sub,
+                          marginTop: 6,
+                        }}
+                      >
+                        {it?.model_creator?.name ? <span><b>{it.model_creator.name}</b></span> : null}
+                        {it?.release_date ? <span style={{ opacity: 0.9 }}>{it.release_date}</span> : null}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {/* 右侧：指标（全部靠右，列对齐） */}
+                  <div
+                    style={{
+                      flex: '0 0 240px',
+                      width: 240,
+                      fontSize: 12,
+                      color: themeTokens.sub,
+                      lineHeight: 1.35,
+                      fontVariantNumeric: 'tabular-nums',
+                      display: 'grid',
+                      gridTemplateColumns: '52px 88px',
+                      gap: '4px 10px',
+                      alignItems: 'center',
+                      justifyContent: 'end',
+                      justifyItems: 'end',
+                      textAlign: 'right',
+                      minWidth: 160,
+                    }}
+                  >
+                    <span style={{ justifySelf: 'end' }}>智能：</span>
+                    <b style={{ color: themeTokens.text, justifySelf: 'end' }}>
+                      {score === null ? '-' : fmt(score, 1)}
+                    </b>
+
+                    <span style={{ justifySelf: 'end' }}>价格：</span>
+                    <b style={{ color: themeTokens.text, justifySelf: 'end' }}>
+                      {price === null ? '-' : fmtUsd(price)}
+                    </b>
+
+                    <span style={{ justifySelf: 'end' }}>速度：</span>
+                    <div style={{ justifySelf: 'end' }}>
+                      <b style={{ color: themeTokens.text }}>
+                        {speed === null ? '-' : fmt(speed, 1)}
+                      </b>
+                      <span style={{ opacity: 0.9 }}> t/s</span>
+                    </div>
+                  </div>
+                </div>
+              );
+          }}
+        />
+      </PosterModal>
     </div>
   );
 };

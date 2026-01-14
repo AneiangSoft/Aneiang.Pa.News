@@ -1,0 +1,86 @@
+/* 纯预览弹窗：去掉 header/footer，最大化贴合海报尺寸 */
+.poster-modal .ant-modal {
+  margin: 0 auto !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 你指定的：去掉弹框边距（保留） */
+.poster-modal .ant-modal-container {
+  margin: 0 auto !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.poster-modal .ant-modal-content {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.poster-modal .ant-modal-body {
+  padding: 0 !important;
+}
+
+.poster-modal .ant-modal-header,
+.poster-modal .ant-modal-footer,
+.poster-modal .ant-modal-close {
+  display: none !important;
+}
+
+/* 悬浮按钮组：胶囊形状 */
+.poster-fab {
+  position: absolute;
+  top: 10px; /* 往上一点 */
+  right: 10px; /* 往右一点 */
+  z-index: 3;
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.poster-fab .ant-space-compact {
+  display: flex;
+}
+
+.poster-fab .poster-fab-btn {
+  width: 38px; /* 小一点 */
+  height: 30px; /* 小一点 */
+  padding: 0;
+  border: none;
+  background: transparent !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px; /* 图标小一点 */
+}
+
+/* 胶囊背景色 + 图标颜色 */
+:root[data-theme="dark"] .poster-fab,
+:root[data-theme="warm"] .poster-fab {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+:root[data-theme="light"] .poster-fab {
+  background: rgba(30, 30, 30, 0.75);
+}
+
+.poster-fab .poster-fab-btn {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.poster-fab .poster-fab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 按钮之间的分隔线 */
+.poster-fab .ant-space-compact-item:not(:last-child) {
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}

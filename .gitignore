@@ -370,3 +370,4 @@ FodyWeavers.xsd
 /Pa.HotNews.Api/wwwroot/site.webmanifest
 /Pa.HotNews.Api/wwwroot/vite.svg
 /owin-docker-compose.yml
+/Pa.HotNews.Api/appsettings.Development.json

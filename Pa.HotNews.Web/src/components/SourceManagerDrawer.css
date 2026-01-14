@@ -1,0 +1,20 @@
+/* 来源管理 Drawer */
+
+.source-mgr-tip {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.source-mgr-selectall {
+  margin-bottom: 10px;
+}
+
+.source-mgr-item .ant-list-item-action {
+  margin-inline-start: 8px;
+}
+
+.source-mgr-footer-tip {
+  color: var(--text-secondary);
+  font-size: 12px;
+}

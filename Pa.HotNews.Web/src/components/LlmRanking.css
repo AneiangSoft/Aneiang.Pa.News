@@ -203,8 +203,31 @@
   border-radius: 10px;
 }
 
+/* 未选中页码底色（你截图里白底导致数字看不见） */
+.llm-page .ant-pagination-item:not(.ant-pagination-item-active) {
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent) !important;
+  border-color: color-mix(in srgb, var(--text-secondary) 22%, transparent) !important;
+}
+
+.llm-page .ant-pagination-item:not(.ant-pagination-item-active):hover {
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent) !important;
+}
+
+/* 页码文字（你截图里看不见的就是这个） */
 .llm-page .ant-pagination-item a {
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
+}
+
+/* 上一页/下一页箭头 */
+.llm-page .ant-pagination-prev .ant-pagination-item-link,
+.llm-page .ant-pagination-next .ant-pagination-item-link {
+  color: var(--text-primary) !important;
+}
+
+/* ... 省略号 */
+.llm-page .ant-pagination-jump-prev .ant-pagination-item-container,
+.llm-page .ant-pagination-jump-next .ant-pagination-item-container {
+  color: var(--text-primary) !important;
 }
 
 .llm-page .ant-pagination-item-active {
@@ -213,29 +236,47 @@
 }
 
 .llm-page .ant-pagination-item-active a {
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
+  font-weight: 800;
 }
 
+/* “第 1-20 条 / 共 N 条” */
+.llm-page .ant-pagination-total-text {
+  color: var(--text-secondary) !important;
+}
+
+/* “20 条/页”“跳至” 文案 */
 .llm-page .ant-pagination .ant-pagination-options-quick-jumper,
 .llm-page .ant-pagination .ant-pagination-options-size-changer {
-  color: var(--text-secondary);
+  color: var(--text-secondary) !important;
 }
 
+/* Select 与 Input：深色/护眼下提高对比度 */
 .llm-page .ant-pagination .ant-select-selector,
 .llm-page .ant-pagination .ant-input {
   border-radius: 10px;
-  background: color-mix(in srgb, var(--bg-secondary) 75%, transparent);
-  border-color: color-mix(in srgb, var(--text-secondary) 22%, transparent);
-  color: var(--text-primary);
+  background: color-mix(in srgb, var(--bg-secondary) 86%, transparent) !important;
+  border-color: color-mix(in srgb, var(--text-secondary) 28%, transparent) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 下拉框选中值 */
+.llm-page .ant-pagination .ant-select-selection-item {
+  color: var(--text-primary) !important;
+}
+
+/* 输入框文字 */
+.llm-page .ant-pagination .ant-input {
+  color: var(--text-primary) !important;
 }
 
 :root[data-theme="light"] .llm-page .ant-pagination .ant-select-selector,
 :root[data-theme="light"] .llm-page .ant-pagination .ant-input {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(15, 23, 42, 0.16);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(15, 23, 42, 0.16) !important;
+  color: var(--text-primary) !important;
 }
 
 .llm-page .ant-pagination .ant-select-arrow {
-  color: var(--text-secondary);
+  color: var(--text-secondary) !important;
 }
