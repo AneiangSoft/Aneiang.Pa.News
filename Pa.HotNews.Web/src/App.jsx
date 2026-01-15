@@ -56,7 +56,8 @@ const sourceNameMap = {
   github: 'GitHub',
   v2ex: 'V2EX',
   tieba: '贴吧',
-  '36kr': '36氪',
+  _36kr: '36氪',
+  ithome: 'IT之家',
 };
 
 // 忽略大小写获取中文名

@@ -732,7 +732,11 @@ body {
   background: linear-gradient(90deg, rgba(30, 136, 229, 0.48), rgba(33, 150, 243, 0.26));
 }
 
-.source-card[data-source="36kr"] .ant-card-head {
+.source-card[data-source="ithome"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(0, 152, 255, 0.56), rgba(0, 171, 255, 0.32));
+}
+
+.source-card[data-source="_36kr"] .ant-card-head {
   background: linear-gradient(90deg, rgba(0, 188, 212, 0.45), rgba(0, 172, 193, 0.26));
 }
 
