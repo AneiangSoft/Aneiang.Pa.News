@@ -58,7 +58,6 @@ Aneiang.Pa.News 是一个现代化的热点/热搜聚合平台，提供“多源
 - **部署友好**：Docker 一键部署，开箱即用。
 
 ## 📸 截图
-- ![](docments/Aneiang.png)
 - ![](docments/ScreenShot_2026-01-04_114410_940.png)
 - ![](docments/ScreenShot_2026-01-04_120819_009.png)
 - ![](docments/ScreenShot_2026-01-04_120855_967.png)
