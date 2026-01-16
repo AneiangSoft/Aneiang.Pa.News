@@ -538,6 +538,22 @@ body {
   transition: all 0.2s;
 }
 
+/* 修复：全站按钮内图标轻微偏移（antd 内部 span 布局 + 我们的全局按钮样式叠加时容易出现） */
+.ant-btn .anticon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.ant-btn-icon-only {
+  padding: 0 !important;
+}
+
+.ant-btn-icon-only > .anticon {
+  margin: 0 !important;
+}
+
 .ant-btn-primary {
   background: var(--primary);
   border-color: var(--primary);
