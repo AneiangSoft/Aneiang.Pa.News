@@ -52,6 +52,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  min-width: 0;
 }
 
 body {
@@ -244,6 +245,8 @@ body {
   flex-direction: column;
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  max-width: 100%;
 }
 
 .source-card:hover {
@@ -647,8 +650,15 @@ body {
     padding: 1rem;
   }
 
+  /* 手机端：单列且不限制容器宽度，避免出现“两侧留白导致卡片看起来放不下” */
   .news-grid {
     grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+
+  /* 手机端：列表在视口内自适应高度，避免整体卡片过高 */
+  .news-list {
+    max-height: calc(100vh - 320px);
   }
 
   .logo h1 {
