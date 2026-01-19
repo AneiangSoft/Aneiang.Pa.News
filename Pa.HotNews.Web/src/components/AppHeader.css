@@ -77,6 +77,64 @@
   min-width: 0;
 }
 
+/* Header 内的按钮/输入框：三主题统一（避免深色/护眼下看不清） */
+.app-header .ant-btn {
+  color: var(--text-primary);
+}
+
+.app-header .ant-btn:hover {
+  color: var(--text-primary);
+}
+
+.app-header .ant-btn.ant-btn-text {
+  color: var(--text-secondary);
+}
+
+.app-header .ant-btn.ant-btn-text:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+}
+
+.app-header .ant-btn.ant-btn-text:active {
+  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+}
+
+.app-header .ant-btn.ant-btn-text:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.app-header .ant-input {
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  border-color: color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  color: var(--text-primary);
+}
+
+.app-header .ant-input::placeholder {
+  color: color-mix(in srgb, var(--text-secondary) 85%, transparent);
+}
+
+.app-header .ant-input:hover {
+  border-color: color-mix(in srgb, var(--text-secondary) 35%, transparent);
+}
+
+.app-header .ant-input:focus,
+.app-header .ant-input-focused {
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+/* Input 的清除按钮/前后缀颜色 */
+.app-header .ant-input-clear-icon,
+.app-header .ant-input-prefix,
+.app-header .ant-input-suffix {
+  color: var(--text-secondary);
+}
+
+.app-header .ant-input-clear-icon:hover {
+  color: var(--text-primary);
+}
+
 .actions,
 .actions-mobile {
   display: flex;
@@ -146,7 +204,7 @@
 
 .main-nav.ant-menu .ant-menu-item-selected {
   color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
 .main-nav.ant-menu .ant-menu-item::after {
