@@ -223,6 +223,57 @@
   gap: 12px;
 }
 
+/* 更多菜单内“打开方式” Segmented：增强选中态/hover 对比度（dark/warm 更明显） */
+.more-menu-item .ant-segmented {
+  background: color-mix(in srgb, var(--bg-secondary) 86%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 24%, transparent);
+}
+
+.more-menu-item .ant-segmented-item {
+  color: color-mix(in srgb, var(--text-primary) 86%, var(--text-secondary));
+}
+
+/* 未选中项 hover：背景提升，但文字必须保持亮色 */
+.more-menu-item .ant-segmented-item:not(.ant-segmented-item-selected):hover,
+.more-menu-item .ant-segmented-item:not(.ant-segmented-item-selected):hover * {
+  color: var(--text-primary) !important;
+  background: color-mix(in srgb, var(--primary) 16%, var(--bg-secondary));
+}
+
+.more-menu-item .ant-segmented-item:active,
+.more-menu-item .ant-segmented-item:active * {
+  color: var(--text-primary) !important;
+}
+
+.more-menu-item .ant-segmented-thumb {
+  /* 选中块加深，提高与选中文字的对比度（dark/warm 尤其明显） */
+  background: color-mix(in srgb, var(--primary) 56%, var(--bg-secondary));
+}
+
+:root[data-theme="light"] .more-menu-item .ant-segmented-thumb {
+  background: color-mix(in srgb, var(--primary) 22%, #ffffff);
+}
+
+/* 选中项文字：在亮色选中块上用深色字，提高对比度 */
+.more-menu-item .ant-segmented-item-selected,
+.more-menu-item .ant-segmented-item-selected * {
+  color: var(--bg-secondary) !important;
+  font-weight: 700;
+}
+
+/* 选中项 hover/active：保持深色字，避免被 antd hover 样式覆盖成黑/灰 */
+.more-menu-item .ant-segmented-item-selected:hover,
+.more-menu-item .ant-segmented-item-selected:hover *,
+.more-menu-item .ant-segmented-item-selected:active,
+.more-menu-item .ant-segmented-item-selected:active * {
+  color: var(--bg-secondary) !important;
+}
+
+:root[data-theme="light"] .more-menu-item .ant-segmented-item-selected,
+:root[data-theme="light"] .more-menu-item .ant-segmented-item-selected * {
+  color: var(--text-primary) !important;
+}
+
 .more-menu-label {
   color: var(--text-secondary);
 }
