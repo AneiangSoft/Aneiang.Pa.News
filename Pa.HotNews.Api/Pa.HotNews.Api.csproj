@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aneiang.Pa.AspNetCore" Version="2.1.4" />
+    <PackageReference Include="Aneiang.Pa.AspNetCore" Version="2.1.6" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
 
     <!-- Logging (Serilog) -->

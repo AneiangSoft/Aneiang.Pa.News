@@ -52,6 +52,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  min-width: 0;
 }
 
 body {
@@ -244,6 +245,8 @@ body {
   flex-direction: column;
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  max-width: 100%;
 }
 
 .source-card:hover {
@@ -535,6 +538,22 @@ body {
   transition: all 0.2s;
 }
 
+/* 修复：全站按钮内图标轻微偏移（antd 内部 span 布局 + 我们的全局按钮样式叠加时容易出现） */
+.ant-btn .anticon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.ant-btn-icon-only {
+  padding: 0 !important;
+}
+
+.ant-btn-icon-only > .anticon {
+  margin: 0 !important;
+}
+
 .ant-btn-primary {
   background: var(--primary);
   border-color: var(--primary);
@@ -647,8 +666,15 @@ body {
     padding: 1rem;
   }
 
+  /* 手机端：单列且不限制容器宽度，避免出现“两侧留白导致卡片看起来放不下” */
   .news-grid {
     grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+
+  /* 手机端：列表在视口内自适应高度，避免整体卡片过高 */
+  .news-list {
+    max-height: calc(100vh - 320px);
   }
 
   .logo h1 {
@@ -732,7 +758,11 @@ body {
   background: linear-gradient(90deg, rgba(30, 136, 229, 0.48), rgba(33, 150, 243, 0.26));
 }
 
-.source-card[data-source="36kr"] .ant-card-head {
+.source-card[data-source="ithome"] .ant-card-head {
+  background: linear-gradient(90deg, rgba(0, 152, 255, 0.56), rgba(0, 171, 255, 0.32));
+}
+
+.source-card[data-source="_36kr"] .ant-card-head {
   background: linear-gradient(90deg, rgba(0, 188, 212, 0.45), rgba(0, 172, 193, 0.26));
 }
 
