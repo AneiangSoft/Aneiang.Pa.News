@@ -96,37 +96,61 @@
 }
 
 /* 统一 Segmented 的产品化外观（跟随三主题变量） */
-.actions .ant-segmented,
-.main-nav.ant-segmented {
+.actions .ant-segmented {
   background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
   border: 1px solid color-mix(in srgb, var(--text-secondary) 20%, transparent);
 }
 
-:root[data-theme="light"] .actions .ant-segmented,
-:root[data-theme="light"] .main-nav.ant-segmented {
+:root[data-theme="light"] .actions .ant-segmented {
   background: rgba(15, 23, 42, 0.04);
   border: 1px solid rgba(15, 23, 42, 0.12);
 }
 
-.actions .ant-segmented-item,
-.main-nav .ant-segmented-item {
+.actions .ant-segmented-item {
   color: var(--text-secondary);
 }
 
-.actions .ant-segmented-item-selected,
-.main-nav .ant-segmented-item-selected {
+.actions .ant-segmented-item-selected {
   color: var(--primary);
   font-weight: 600;
 }
 
-.actions .ant-segmented-thumb,
-.main-nav .ant-segmented-thumb {
+.actions .ant-segmented-thumb {
   background: color-mix(in srgb, var(--bg-secondary) 55%, var(--primary) 45%);
 }
 
-:root[data-theme="light"] .actions .ant-segmented-thumb,
-:root[data-theme="light"] .main-nav .ant-segmented-thumb {
+:root[data-theme="light"] .actions .ant-segmented-thumb {
   background: color-mix(in srgb, #ffffff 70%, var(--primary) 30%);
+}
+
+/* 主导航 Menu（产品化横向导航，三主题适配） */
+.main-nav.ant-menu {
+  background: transparent;
+  border-bottom: none;
+  line-height: 1;
+}
+
+.main-nav.ant-menu .ant-menu-item {
+  height: 34px;
+  line-height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  margin: 0 2px;
+  color: var(--text-secondary);
+}
+
+.main-nav.ant-menu .ant-menu-item:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+}
+
+.main-nav.ant-menu .ant-menu-item-selected {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
+.main-nav.ant-menu .ant-menu-item::after {
+  border-bottom: none !important;
 }
 
 /* 更多菜单内的“嵌入式 segmented”排版 */

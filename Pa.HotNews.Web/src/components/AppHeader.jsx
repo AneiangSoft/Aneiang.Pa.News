@@ -5,6 +5,7 @@ import {
   Tooltip,
   Button,
   Badge,
+  Menu,
 } from 'antd';
 import {
   MenuOutlined,
@@ -236,11 +237,16 @@ function AppHeader({
       {/* --- 中间：主导航 + 搜索 --- */}
       <div className="header-center">
         {availableViews.length > 1 && !isMobile && (
-          <Segmented
+          <Menu
+            mode="horizontal"
+            selectedKeys={[view]}
             className="main-nav"
-            value={view}
-            onChange={handleViewChange}
-            options={availableViews.map(v => ({ label: v.label, value: v.key }))}
+            items={availableViews.map(v => ({
+              key: v.key,
+              label: v.label,
+              className: 'nav-item',
+              onClick: () => handleViewChange(v.key)
+            }))}
           />
         )}
 
