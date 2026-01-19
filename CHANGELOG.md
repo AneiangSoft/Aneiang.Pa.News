@@ -1,5 +1,25 @@
 # 变更日志（Changelog）
 
+## [1.0.8] - 2026-01-19
+
+### 功能/体验
+- 顶部导航与操作区重构：
+  - 桌面端增加“主导航 Menu + 搜索”的三段式布局，信息架构更清晰。
+  - 桌面端操作收敛到“更多”菜单（包含打开方式、复制筛选链接、分享、来源管理、GitHub）。
+  - 移动端菜单重构：支持“频道（view）切换”、主题切换、打开方式切换、收藏/来源管理/分享等入口。
+- 首屏加载体验优化：热榜首屏由 `Spin` 替换为骨架屏（Skeleton），并适配网格布局。
+- 主题与全局组件样式增强：
+  - 三主题（dark/light/warm）文本变量细分（新增 `--text-tertiary` / `--text-disabled`），整体对比度更一致。
+  - 增强 Ant Design 全局覆写（Input/Select/Dropdown/Drawer/Modal/Skeleton/Empty 等）在三主题下的可读性与一致性。
+- 新增IT之家、36氪资讯数据
+
+### 安全/配置
+- 清理敏感配置：移除 `Pa.HotNews.Api/appsettings.json` 中的 `LlmRanking.ApiKey` 与 `Site.Title` 明文配置（避免泄露与环境耦合）。
+
+### 构建/部署
+- Docker 镜像发布：新增 `caco/aneiang-pa-news:1.0.8`，并同步更新 `latest` 指向本版本。
+- Docker 镜像支持多架构：`linux/amd64`、`linux/arm64`。
+
 ## [1.0.7] - 2026-01-11
 
 ### 新增
