@@ -199,12 +199,16 @@
 
 .main-nav.ant-menu .ant-menu-item:hover {
   color: var(--text-primary);
-  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+  background: color-mix(in srgb, var(--primary) 14%, var(--bg-secondary));
+}
+
+.main-nav.ant-menu .ant-menu-item:active {
+  background: color-mix(in srgb, var(--primary) 18%, var(--bg-secondary));
 }
 
 .main-nav.ant-menu .ant-menu-item-selected {
   color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  background: color-mix(in srgb, var(--primary) 22%, var(--bg-secondary));
 }
 
 .main-nav.ant-menu .ant-menu-item::after {
@@ -228,10 +232,31 @@
   font-size: 12px;
 }
 
-/* Dropdown 菜单选中态（移动端频道切换更直观） */
+/* Dropdown 菜单 hover/active/selected：三主题更明显 */
+.app-header :where(.ant-dropdown-menu) {
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 18%, transparent);
+}
+
+.app-header :where(.ant-dropdown-menu-item) {
+  color: var(--text-primary);
+}
+
+.app-header :where(.ant-dropdown-menu-item):hover {
+  background: color-mix(in srgb, var(--primary) 14%, var(--bg-secondary));
+}
+
+.app-header :where(.ant-dropdown-menu-item):active {
+  background: color-mix(in srgb, var(--primary) 18%, var(--bg-secondary));
+}
+
 .is-selected {
   color: var(--primary) !important;
   font-weight: 600;
+}
+
+.app-header :where(.ant-dropdown-menu-item.is-selected):hover {
+  background: color-mix(in srgb, var(--primary) 18%, var(--bg-secondary));
 }
 
 /* 移动端：两行布局（第一行品牌+按钮，第二行搜索） */

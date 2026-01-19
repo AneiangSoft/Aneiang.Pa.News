@@ -17,7 +17,7 @@ import {
   CopyOutlined,
   SettingOutlined,
   BookOutlined,
-  MoreOutlined, // “更多”图标
+  SettingOutlined as MoreActionOutlined, // “更多/设置”入口（更明显）
 } from '@ant-design/icons';
 
 import LogoDark from '../assets/logo-dark.svg';
@@ -284,7 +284,7 @@ function AppHeader({
 
             <Dropdown menu={desktopMoreMenu} trigger={['click']}>
               <Tooltip title="更多">
-                <Button type="text" icon={<MoreOutlined />} />
+                <Button type="text" icon={<MoreActionOutlined />} />
               </Tooltip>
             </Dropdown>
           </div>
