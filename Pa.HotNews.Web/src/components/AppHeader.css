@@ -1,14 +1,17 @@
-/* 顶部 Header 样式从 App.css 中拆分出来（保持原样） */
+/* 顶部 Header 样式：产品化三段式布局（适配 dark/light/warm 三主题） */
 
 .app-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  padding: 0 2rem;
+
   height: 4.5rem;
-  display: flex;
+  padding: 0 1.25rem;
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
+  gap: 1rem;
 
   background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
   backdrop-filter: blur(12px);
@@ -18,10 +21,11 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 }
 
-.logo {
+.header-left {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .logo-img {
@@ -31,54 +35,149 @@
   flex: 0 0 auto;
 }
 
-.logo h1 {
+.site-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 70%, #ffffff), var(--primary));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.4px;
 }
 
-:root[data-theme="light"] .logo h1 {
+:root[data-theme="light"] .site-title {
   background: none;
   color: var(--text-primary);
 }
 
-.actions {
+.header-center {
   display: flex;
-  gap: 0.6rem;
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
-.actions .ant-btn {
-  padding: 0 0.75rem;
-}
-
-.actions .ant-badge {
-  line-height: 1;
+.main-nav {
+  flex: 0 0 auto;
 }
 
 .search-input {
-  width: min(320px, 52vw);
+  width: min(560px, 52vw);
 }
 
+.header-right {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.actions,
+.actions-mobile {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+}
+
+.actions .ant-btn,
+.actions-mobile .ant-btn {
+  padding: 0 0.5rem;
+}
+
+.actions .ant-badge,
+.actions-mobile .ant-badge {
+  line-height: 1;
+}
+
+/* 统一 Segmented 的产品化外观（跟随三主题变量） */
+.actions .ant-segmented,
+.main-nav.ant-segmented {
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 20%, transparent);
+}
+
+:root[data-theme="light"] .actions .ant-segmented,
+:root[data-theme="light"] .main-nav.ant-segmented {
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.actions .ant-segmented-item,
+.main-nav .ant-segmented-item {
+  color: var(--text-secondary);
+}
+
+.actions .ant-segmented-item-selected,
+.main-nav .ant-segmented-item-selected {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.actions .ant-segmented-thumb,
+.main-nav .ant-segmented-thumb {
+  background: color-mix(in srgb, var(--bg-secondary) 55%, var(--primary) 45%);
+}
+
+:root[data-theme="light"] .actions .ant-segmented-thumb,
+:root[data-theme="light"] .main-nav .ant-segmented-thumb {
+  background: color-mix(in srgb, #ffffff 70%, var(--primary) 30%);
+}
+
+/* 更多菜单内的“嵌入式 segmented”排版 */
+.more-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.more-menu-label {
+  color: var(--text-secondary);
+}
+
+.more-menu-section {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* Dropdown 菜单选中态（移动端频道切换更直观） */
+.is-selected {
+  color: var(--primary) !important;
+  font-weight: 600;
+}
+
+/* 移动端：两行布局（第一行品牌+按钮，第二行搜索） */
 @media (max-width: 768px) {
   .app-header {
     height: auto;
-    padding-top: 0.6rem;
-    padding-bottom: 0.6rem;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    padding: 0.75rem 0.9rem;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "left right"
+      "center center";
+    gap: 0.6rem;
   }
 
-  .logo {
-    flex: 0 0 auto;
+  .header-left {
+    grid-area: left;
+  }
+
+  .header-right {
+    grid-area: right;
+  }
+
+  .header-center {
+    grid-area: center;
+    justify-content: stretch;
+  }
+
+  .search-input {
     width: 100%;
   }
 
@@ -87,48 +186,7 @@
     height: 30px;
   }
 
-  .actions.mobile-actions {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: nowrap;
+  .site-title {
+    font-size: 1.1rem;
   }
-
-  .actions.mobile-actions .search-input {
-    flex: 1;
-    min-width: 0;
-    width: auto;
-  }
-
-  .actions.mobile-actions .ant-btn {
-    flex: 0 0 auto;
-  }
-}
-
-.actions .ant-segmented {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(148, 163, 184, 0.20);
-}
-
-:root[data-theme="light"] .actions .ant-segmented {
-  background: rgba(15, 23, 42, 0.04);
-  border: 1px solid rgba(15, 23, 42, 0.12);
-}
-
-.actions .ant-segmented-item {
-  color: var(--text-secondary);
-}
-
-.actions .ant-segmented-item-selected {
-  color: var(--primary);
-  font-weight: 600;
-}
-
-.actions .ant-segmented-thumb {
-  background: color-mix(in srgb, var(--bg-secondary) 55%, var(--primary) 45%);
-}
-
-:root[data-theme="light"] .actions .ant-segmented-thumb {
-  background: color-mix(in srgb, #ffffff 70%, var(--primary) 30%);
 }

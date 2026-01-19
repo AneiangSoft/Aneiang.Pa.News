@@ -1,4 +1,11 @@
-import { Grid, Dropdown, Input, Segmented, Tooltip, Button, Badge } from 'antd';
+import {
+  Dropdown,
+  Input,
+  Segmented,
+  Tooltip,
+  Button,
+  Badge,
+} from 'antd';
 import {
   MenuOutlined,
   GithubOutlined,
@@ -9,6 +16,7 @@ import {
   CopyOutlined,
   SettingOutlined,
   BookOutlined,
+  MoreOutlined, // “更多”图标
 } from '@ant-design/icons';
 
 import LogoDark from '../assets/logo-dark.svg';
@@ -37,165 +45,265 @@ function AppHeader({
   mobileMenuOpen,
   setMobileMenuOpen,
 }) {
+  // 桌面端“更多”菜单项
+  const desktopMoreMenu = {
+    items: [
+      {
+        key: 'section-settings',
+        label: <span className="more-menu-section">设置</span>,
+        disabled: true,
+      },
+      {
+        key: 'linkBehavior',
+        label: (
+          <div className="more-menu-item">
+            <span className="more-menu-label">打开方式</span>
+            <Segmented
+              size="small"
+              value={linkBehavior}
+              onChange={setLinkBehavior}
+              options={[
+                { label: '站内', value: 'in-app' },
+                { label: '新标签', value: 'new-tab' },
+              ]}
+            />
+          </div>
+        ),
+      },
+      { type: 'divider' },
+      {
+        key: 'section-tools',
+        label: <span className="more-menu-section">工具</span>,
+        disabled: true,
+      },
+      {
+        key: 'copy',
+        label: '复制筛选链接',
+        icon: <CopyOutlined />,
+        onClick: copyFilterLink,
+      },
+      {
+        key: 'share',
+        label: '分享本站',
+        icon: <ShareAltOutlined />,
+        onClick: sharePage,
+      },
+      {
+        key: 'source',
+        label: '来源管理',
+        icon: <SettingOutlined />,
+        onClick: onOpenSourceMgr,
+      },
+      { type: 'divider' },
+      {
+        key: 'section-about',
+        label: <span className="more-menu-section">关于</span>,
+        disabled: true,
+      },
+      {
+        key: 'github',
+        label: 'GitHub',
+        icon: <GithubOutlined />,
+        onClick: () =>
+          window.open(
+            'https://github.com/AneiangSoft/Aneiang.Pa.News',
+            '_blank',
+            'noopener,noreferrer'
+          ),
+      },
+    ],
+  };
+
+  // 移动端菜单项（信息架构更清晰）
+  const mobileMenu = {
+    items: [
+      // 1. 频道切换
+      ...(availableViews.length > 1
+        ? [
+            {
+              key: 'views-title',
+              label: <span className="more-menu-section">频道</span>,
+              disabled: true,
+            },
+            ...availableViews.map(v => ({
+              key: `view-${v.key}`,
+              label: v.label,
+              className: view === v.key ? 'is-selected' : '',
+              onClick: () => handleViewChange(v.key),
+            })),
+            { type: 'divider' },
+          ]
+        : []),
+
+      // 2. 主题
+      {
+        key: 'theme-title',
+        label: <span className="more-menu-section">主题</span>,
+        disabled: true,
+      },
+      {
+        key: 'theme-dark',
+        label: '深色主题',
+        icon: <MoonOutlined />,
+        onClick: () => setTheme('dark'),
+      },
+      {
+        key: 'theme-light',
+        label: '浅色主题',
+        icon: <SunOutlined />,
+        onClick: () => setTheme('light'),
+      },
+      {
+        key: 'theme-warm',
+        label: '护眼主题',
+        icon: <BulbOutlined />,
+        onClick: () => setTheme('warm'),
+      },
+      { type: 'divider' },
+
+      // 3. 设置与工具
+      {
+        key: 'linkBehavior',
+        label: (
+          <div className="more-menu-item">
+            <span className="more-menu-label">打开方式</span>
+            <Segmented
+              size="small"
+              value={linkBehavior}
+              onChange={setLinkBehavior}
+              options={[
+                { label: '站内', value: 'in-app' },
+                { label: '新标签', value: 'new-tab' },
+              ]}
+            />
+          </div>
+        ),
+      },
+      { type: 'divider' },
+      {
+        key: 'fav',
+        label: `收藏${favoriteCount ? `（${favoriteCount}）` : ''}`,
+        icon: <BookOutlined />,
+        onClick: onOpenFavorites,
+      },
+      {
+        key: 'source',
+        label: '来源管理',
+        icon: <SettingOutlined />,
+        onClick: onOpenSourceMgr,
+      },
+      {
+        key: 'copy',
+        label: '复制筛选链接',
+        icon: <CopyOutlined />,
+        onClick: copyFilterLink,
+      },
+      {
+        key: 'share',
+        label: '分享本站',
+        icon: <ShareAltOutlined />,
+        onClick: sharePage,
+      },
+      { type: 'divider' },
+
+      // 4. 关于
+      {
+        key: 'github',
+        label: 'GitHub',
+        icon: <GithubOutlined />,
+        onClick: () =>
+          window.open(
+            'https://github.com/AneiangSoft/Aneiang.Pa',
+            '_blank',
+            'noopener,noreferrer'
+          ),
+      },
+    ],
+  };
+
   return (
     <header className="app-header">
-      <div className="logo">
+      {/* --- 左侧：品牌 Logo --- */}
+      <div className="header-left">
         <img
           className="logo-img"
           src={{ dark: LogoDark, light: LogoLight, warm: LogoWarm }[theme]}
           alt="热榜聚合 Logo"
         />
-        <h1>{siteTitle || '热榜聚合'}</h1>
+        <h1 className="site-title">{siteTitle || '热榜聚合'}</h1>
+      </div>
 
-        {availableViews.length > 1 && (
+      {/* --- 中间：主导航 + 搜索 --- */}
+      <div className="header-center">
+        {availableViews.length > 1 && !isMobile && (
           <Segmented
+            className="main-nav"
             value={view}
             onChange={handleViewChange}
             options={availableViews.map(v => ({ label: v.label, value: v.key }))}
           />
         )}
+
+        <Input
+          allowClear
+          className="search-input"
+          placeholder={isMobile ? '搜索...' : '搜索所有热榜标题...'}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+        />
       </div>
 
-      {/* 桌面端：原来的导航 */}
-      {!isMobile && (
-        <div className="actions">
-          <Input
-            allowClear
-            className="search-input"
-            placeholder="搜索所有热榜标题..."
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-          />
+      {/* --- 右侧：操作区 --- */}
+      <div className="header-right">
+        {/* 桌面端操作区 */}
+        {!isMobile && (
+          <div className="actions">
+            <Tooltip title="主题切换">
+              <Segmented
+                value={theme}
+                onChange={setTheme}
+                options={[
+                  { value: 'dark', icon: <MoonOutlined /> },
+                  { value: 'light', icon: <SunOutlined /> },
+                  { value: 'warm', icon: <BulbOutlined /> },
+                ]}
+              />
+            </Tooltip>
 
-          <Tooltip title="主题切换（深色 / 浅色 / 护眼暖色）">
-            <Segmented
-              value={theme}
-              onChange={setTheme}
-              options={[
-                { label: '深色', value: 'dark', icon: <MoonOutlined /> },
-                { label: '浅色', value: 'light', icon: <SunOutlined /> },
-                { label: '护眼', value: 'warm', icon: <BulbOutlined /> },
-              ]}
-            />
-          </Tooltip>
+            <Tooltip title="收藏">
+              <Badge count={favoriteCount} size="small" offset={[-2, 2]}>
+                <Button type="text" icon={<BookOutlined />} onClick={onOpenFavorites} />
+              </Badge>
+            </Tooltip>
 
-          <Tooltip title="链接打开方式（站内阅读 / 新标签页）">
-            <Segmented
-              value={linkBehavior}
-              onChange={setLinkBehavior}
-              options={[
-                { label: '站内阅读', value: 'in-app' },
-                { label: '新标签页', value: 'new-tab' },
-              ]}
-            />
-          </Tooltip>
+            <Dropdown menu={desktopMoreMenu} trigger={['click']}>
+              <Tooltip title="更多">
+                <Button type="text" icon={<MoreOutlined />} />
+              </Tooltip>
+            </Dropdown>
+          </div>
+        )}
 
-          <Tooltip title="复制当前筛选链接">
-            <Button type="default" icon={<CopyOutlined />} onClick={copyFilterLink} />
-          </Tooltip>
+        {/* 移动端汉堡菜单 */}
+        {isMobile && (
+          <div className="actions-mobile">
+            <Tooltip title="收藏">
+              <Badge count={favoriteCount} size="small" offset={[-2, 2]}>
+                <Button type="text" icon={<BookOutlined />} onClick={onOpenFavorites} />
+              </Badge>
+            </Tooltip>
 
-          <Tooltip title="分享本站">
-            <Button type="default" icon={<ShareAltOutlined />} onClick={sharePage} />
-          </Tooltip>
-
-          <Tooltip title="来源管理">
-            <Button type="default" icon={<SettingOutlined />} onClick={onOpenSourceMgr} />
-          </Tooltip>
-
-          <Tooltip title="收藏">
-            <Badge count={favoriteCount} size="small" offset={[-2, 2]}>
-              <Button type="default" icon={<BookOutlined />} onClick={onOpenFavorites} />
-            </Badge>
-          </Tooltip>
-
-          <Tooltip title="GitHub">
-            <Button
-              type="default"
-              icon={<GithubOutlined />}
-              onClick={() =>
-                window.open(
-                  'https://github.com/AneiangSoft/Aneiang.Pa.News',
-                  '_blank',
-                  'noopener,noreferrer'
-                )
-              }
-            />
-          </Tooltip>
-        </div>
-      )}
-
-      {/* 移动端：下拉菜单 */}
-      {isMobile && (
-        <div className="actions mobile-actions">
-          <Input
-            allowClear
-            className="search-input"
-            placeholder="搜索所有热榜标题..."
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-          />
-
-          <Dropdown
-            trigger={['click']}
-            open={mobileMenuOpen}
-            onOpenChange={setMobileMenuOpen}
-            menu={{
-              items: [
-                {
-                  key: 'theme-dark',
-                  label: '深色主题',
-                  icon: <MoonOutlined />,
-                  onClick: () => setTheme('dark'),
-                },
-                {
-                  key: 'theme-light',
-                  label: '浅色主题',
-                  icon: <SunOutlined />,
-                  onClick: () => setTheme('light'),
-                },
-                {
-                  key: 'theme-warm',
-                  label: '护眼主题',
-                  icon: <BulbOutlined />,
-                  onClick: () => setTheme('warm'),
-                },
-                { type: 'divider' },
-                {
-                  key: 'share',
-                  label: '分享本站',
-                  icon: <ShareAltOutlined />,
-                  onClick: sharePage,
-                },
-                {
-                  key: 'source',
-                  label: '来源管理',
-                  icon: <SettingOutlined />,
-                  onClick: onOpenSourceMgr,
-                },
-                {
-                  key: 'fav',
-                  label: `收藏${favoriteCount ? `（${favoriteCount}）` : ''}`,
-                  icon: <BookOutlined />,
-                  onClick: onOpenFavorites,
-                },
-                {
-                  key: 'github',
-                  label: 'Github',
-                  icon: <GithubOutlined />,
-                  onClick: () =>
-                    window.open(
-                      'https://github.com/AneiangSoft/Aneiang.Pa',
-                      '_blank',
-                      'noopener,noreferrer'
-                    ),
-                },
-              ],
-            }}
-          >
-            <Button type="default" icon={<MenuOutlined />} />
-          </Dropdown>
-        </div>
-      )}
+            <Dropdown
+              trigger={['click']}
+              open={mobileMenuOpen}
+              onOpenChange={setMobileMenuOpen}
+              menu={mobileMenu}
+            >
+              <Button type="text" icon={<MenuOutlined />} />
+            </Dropdown>
+          </div>
+        )}
+      </div>
     </header>
   );
 }
