@@ -7,9 +7,11 @@
   --bg-primary: #0b1220;
   --bg-secondary: #0f1b2d;
 
-  /* 更柔和的文本色，降低刺眼 */
-  --text-primary: rgba(248, 250, 252, 0.92);
-  --text-secondary: rgba(148, 163, 184, 0.88);
+  /* 更柔和的文本色，降低刺眼（但仍需足够对比度） */
+  --text-primary: rgba(248, 250, 252, 0.94);
+  --text-secondary: rgba(167, 185, 210, 0.92);
+  --text-tertiary: rgba(148, 163, 184, 0.72);
+  --text-disabled: rgba(148, 163, 184, 0.52);
 
   --card-bg: rgba(15, 23, 42, 0.72);
   --card-border: rgba(148, 163, 184, 0.12);
@@ -25,7 +27,9 @@
   --bg-secondary: #ffffff;
 
   --text-primary: rgba(15, 23, 42, 0.92);
-  --text-secondary: rgba(71, 85, 105, 0.88);
+  --text-secondary: rgba(51, 65, 85, 0.86);
+  --text-tertiary: rgba(71, 85, 105, 0.70);
+  --text-disabled: rgba(71, 85, 105, 0.52);
 
   --card-bg: rgba(255, 255, 255, 0.92);
   --card-border: rgba(15, 23, 42, 0.10);
@@ -40,8 +44,10 @@
   --bg-primary: #12110f;
   --bg-secondary: #181613;
 
-  --text-primary: rgba(255, 252, 245, 0.92);
-  --text-secondary: rgba(203, 193, 176, 0.90);
+  --text-primary: rgba(255, 252, 245, 0.94);
+  --text-secondary: rgba(224, 213, 195, 0.92);
+  --text-tertiary: rgba(203, 193, 176, 0.74);
+  --text-disabled: rgba(203, 193, 176, 0.52);
 
   --card-bg: rgba(24, 22, 19, 0.78);
   --card-border: rgba(203, 193, 176, 0.14);
@@ -768,4 +774,212 @@ body {
 
 .source-card[data-source="toutiao"] .ant-card-head {
   background: linear-gradient(90deg, rgba(255, 77, 79, 0.48), rgba(255, 120, 117, 0.26));
+}
+
+/* ========== Global Productized States & Antd Theme Overrides ========== */
+
+.global-skeleton {
+  max-width: 1560px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.global-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1.25rem;
+}
+
+.global-skeleton-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.global-skeleton-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* Skeleton 在三主题下的对比度 */
+.ant-skeleton .ant-skeleton-input,
+.ant-skeleton .ant-skeleton-title,
+.ant-skeleton .ant-skeleton-paragraph > li {
+  background: color-mix(in srgb, var(--text-secondary) 18%, transparent) !important;
+}
+
+:root[data-theme="light"] .ant-skeleton .ant-skeleton-input,
+:root[data-theme="light"] .ant-skeleton .ant-skeleton-title,
+:root[data-theme="light"] .ant-skeleton .ant-skeleton-paragraph > li {
+  background: rgba(15, 23, 42, 0.08) !important;
+}
+
+/* 全站 Input / TextArea */
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-number,
+.ant-input-number-affix-wrapper {
+  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent) !important;
+  border-color: color-mix(in srgb, var(--text-secondary) 22%, transparent) !important;
+  color: var(--text-primary) !important;
+}
+
+.ant-input::placeholder,
+.ant-input-affix-wrapper input::placeholder {
+  color: color-mix(in srgb, var(--text-secondary) 85%, transparent) !important;
+}
+
+.ant-input:hover,
+.ant-input-affix-wrapper:hover,
+.ant-input-number:hover,
+.ant-input-number-affix-wrapper:hover {
+  border-color: color-mix(in srgb, var(--text-secondary) 35%, transparent) !important;
+}
+
+.ant-input:focus,
+.ant-input-affix-wrapper-focused,
+.ant-input-number-focused,
+.ant-input-number-affix-wrapper-focused {
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent) !important;
+}
+
+.ant-input-clear-icon,
+.ant-input-prefix,
+.ant-input-suffix,
+.anticon.ant-input-password-icon {
+  color: var(--text-secondary) !important;
+}
+
+.ant-input-clear-icon:hover {
+  color: var(--text-primary) !important;
+}
+
+/* 全站 Select */
+.ant-select-selector {
+  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent) !important;
+  border-color: color-mix(in srgb, var(--text-secondary) 22%, transparent) !important;
+  color: var(--text-primary) !important;
+}
+
+.ant-select-selection-item,
+.ant-select-selection-placeholder {
+  color: var(--text-primary) !important;
+}
+
+.ant-select-arrow {
+  color: var(--text-secondary) !important;
+}
+
+/* Dropdown/Menu/Popover 弹层（portal 到 body，需要全局覆写） */
+.ant-dropdown .ant-dropdown-menu,
+.ant-popover .ant-popover-inner,
+.ant-select-dropdown {
+  background: color-mix(in srgb, var(--bg-secondary) 94%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 18%, transparent) !important;
+}
+
+.ant-dropdown-menu-item,
+.ant-dropdown-menu-submenu-title,
+.ant-select-item {
+  color: var(--text-primary) !important;
+}
+
+.ant-dropdown-menu-item:hover,
+.ant-dropdown-menu-submenu-title:hover,
+.ant-select-item-option-active {
+  background: color-mix(in srgb, var(--primary) 14%, var(--bg-secondary)) !important;
+}
+
+.ant-dropdown-menu-item:active,
+.ant-select-item-option-selected {
+  background: color-mix(in srgb, var(--primary) 18%, var(--bg-secondary)) !important;
+}
+
+/* Drawer / Modal */
+.ant-drawer .ant-drawer-content,
+.ant-modal .ant-modal-content {
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 14%, transparent) !important;
+}
+
+/* 默认 header 透明时在深色/护眼可能对比不足：为标题区提供更稳定的底色 */
+.ant-drawer .ant-drawer-header,
+.ant-modal .ant-modal-header {
+  background: color-mix(in srgb, var(--bg-secondary) 96%, transparent) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-secondary) 18%, transparent) !important;
+}
+
+.ant-drawer .ant-drawer-title,
+.ant-modal .ant-modal-title {
+  color: var(--text-primary) !important;
+  font-weight: 800;
+}
+
+/* Antd Drawer/Modal 标题内部节点（antd 可能把颜色放到子节点上） */
+.ant-drawer .ant-drawer-title *,
+.ant-modal .ant-modal-title * {
+  color: var(--text-primary) !important;
+}
+
+.ant-drawer .ant-drawer-close,
+.ant-modal .ant-modal-close {
+  color: var(--text-secondary) !important;
+}
+
+.ant-drawer .ant-drawer-close:hover,
+.ant-modal .ant-modal-close:hover {
+  color: var(--text-primary) !important;
+}
+
+/* 特定 Drawer（来源管理/收藏）：进一步增强标题区对比度 */
+.source-mgr-drawer .ant-drawer-header,
+.favorites-drawer .ant-drawer-header {
+  background: color-mix(in srgb, var(--bg-secondary) 98%, transparent) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-secondary) 22%, transparent) !important;
+}
+
+.source-mgr-drawer .ant-drawer-title,
+.favorites-drawer .ant-drawer-title {
+  font-weight: 900;
+}
+
+.source-mgr-drawer .ant-drawer-extra,
+.favorites-drawer .ant-drawer-extra {
+  color: var(--text-primary);
+}
+
+.source-mgr-drawer .ant-drawer-extra .ant-btn,
+.favorites-drawer .ant-drawer-extra .ant-btn {
+  color: var(--text-primary);
+}
+
+/* Empty */
+.ant-empty-description {
+  color: var(--text-secondary) !important;
+}
+
+/* Menu（非 Header 主导航场景） */
+.ant-menu {
+  background: transparent;
+}
+
+.ant-menu-item {
+  color: var(--text-secondary);
+}
+
+.ant-menu-item:hover {
+  color: var(--text-primary);
+}
+
+/* 响应式：骨架屏跟随网格 */
+@media (max-width: 768px) {
+  .global-skeleton-grid {
+    grid-template-columns: 1fr;
+  }
 }

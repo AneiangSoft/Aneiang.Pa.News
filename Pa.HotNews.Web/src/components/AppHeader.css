@@ -1,14 +1,17 @@
-/* 顶部 Header 样式从 App.css 中拆分出来（保持原样） */
+/* 顶部 Header 样式：产品化三段式布局（适配 dark/light/warm 三主题） */
 
 .app-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  padding: 0 2rem;
+
   height: 4.5rem;
-  display: flex;
+  padding: 0 1.25rem;
+
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
+  gap: 1rem;
 
   background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
   backdrop-filter: blur(12px);
@@ -18,10 +21,11 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 }
 
-.logo {
+.header-left {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .logo-img {
@@ -31,84 +35,128 @@
   flex: 0 0 auto;
 }
 
-.logo h1 {
+.site-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 70%, #ffffff), var(--primary));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.4px;
 }
 
-:root[data-theme="light"] .logo h1 {
+:root[data-theme="light"] .site-title {
   background: none;
   color: var(--text-primary);
 }
 
-.actions {
+.header-center {
   display: flex;
-  gap: 0.6rem;
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
-.actions .ant-btn {
-  padding: 0 0.75rem;
-}
-
-.actions .ant-badge {
-  line-height: 1;
+.main-nav {
+  flex: 0 0 auto;
 }
 
 .search-input {
-  width: min(320px, 52vw);
+  width: min(560px, 52vw);
 }
 
-@media (max-width: 768px) {
-  .app-header {
-    height: auto;
-    padding-top: 0.6rem;
-    padding-bottom: 0.6rem;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  .logo {
-    flex: 0 0 auto;
-    width: 100%;
-  }
-
-  .logo-img {
-    width: 30px;
-    height: 30px;
-  }
-
-  .actions.mobile-actions {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: nowrap;
-  }
-
-  .actions.mobile-actions .search-input {
-    flex: 1;
-    min-width: 0;
-    width: auto;
-  }
-
-  .actions.mobile-actions .ant-btn {
-    flex: 0 0 auto;
-  }
+.header-right {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
+/* Header 内的按钮/输入框：三主题统一（避免深色/护眼下看不清） */
+.app-header .ant-btn {
+  color: var(--text-primary);
+}
+
+.app-header .ant-btn:hover {
+  color: var(--text-primary);
+}
+
+.app-header .ant-btn.ant-btn-text {
+  color: var(--text-secondary);
+}
+
+.app-header .ant-btn.ant-btn-text:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);
+}
+
+.app-header .ant-btn.ant-btn-text:active {
+  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+}
+
+.app-header .ant-btn.ant-btn-text:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.app-header .ant-input {
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  border-color: color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  color: var(--text-primary);
+}
+
+.app-header .ant-input::placeholder {
+  color: color-mix(in srgb, var(--text-secondary) 85%, transparent);
+}
+
+.app-header .ant-input:hover {
+  border-color: color-mix(in srgb, var(--text-secondary) 35%, transparent);
+}
+
+.app-header .ant-input:focus,
+.app-header .ant-input-focused {
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+/* Input 的清除按钮/前后缀颜色 */
+.app-header .ant-input-clear-icon,
+.app-header .ant-input-prefix,
+.app-header .ant-input-suffix {
+  color: var(--text-secondary);
+}
+
+.app-header .ant-input-clear-icon:hover {
+  color: var(--text-primary);
+}
+
+.actions,
+.actions-mobile {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+}
+
+.actions .ant-btn,
+.actions-mobile .ant-btn {
+  padding: 0 0.5rem;
+}
+
+.actions .ant-badge,
+.actions-mobile .ant-badge {
+  line-height: 1;
+}
+
+/* 统一 Segmented 的产品化外观（跟随三主题变量） */
 .actions .ant-segmented {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(148, 163, 184, 0.20);
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 20%, transparent);
 }
 
 :root[data-theme="light"] .actions .ant-segmented {
@@ -131,4 +179,172 @@
 
 :root[data-theme="light"] .actions .ant-segmented-thumb {
   background: color-mix(in srgb, #ffffff 70%, var(--primary) 30%);
+}
+
+/* 主导航 Menu（产品化横向导航，三主题适配） */
+.main-nav.ant-menu {
+  background: transparent;
+  border-bottom: none;
+  line-height: 1;
+}
+
+.main-nav.ant-menu .ant-menu-item {
+  height: 34px;
+  line-height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  margin: 0 2px;
+  color: var(--text-secondary);
+}
+
+.main-nav.ant-menu .ant-menu-item:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--primary) 14%, var(--bg-secondary));
+}
+
+.main-nav.ant-menu .ant-menu-item:active {
+  background: color-mix(in srgb, var(--primary) 18%, var(--bg-secondary));
+}
+
+.main-nav.ant-menu .ant-menu-item-selected {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 22%, var(--bg-secondary));
+}
+
+.main-nav.ant-menu .ant-menu-item::after {
+  border-bottom: none !important;
+}
+
+/* 更多菜单内的“嵌入式 segmented”排版 */
+.more-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 更多菜单内“打开方式” Segmented：增强选中态/hover 对比度（dark/warm 更明显） */
+.more-menu-item .ant-segmented {
+  background: color-mix(in srgb, var(--bg-secondary) 86%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 24%, transparent);
+}
+
+.more-menu-item .ant-segmented-item {
+  color: color-mix(in srgb, var(--text-primary) 86%, var(--text-secondary));
+}
+
+/* 未选中项 hover：背景提升，但文字必须保持亮色 */
+.more-menu-item .ant-segmented-item:not(.ant-segmented-item-selected):hover,
+.more-menu-item .ant-segmented-item:not(.ant-segmented-item-selected):hover * {
+  color: var(--text-primary) !important;
+  background: color-mix(in srgb, var(--primary) 16%, var(--bg-secondary));
+}
+
+.more-menu-item .ant-segmented-item:active,
+.more-menu-item .ant-segmented-item:active * {
+  color: var(--text-primary) !important;
+}
+
+.more-menu-item .ant-segmented-thumb {
+  /* 选中块加深，提高与选中文字的对比度（dark/warm 尤其明显） */
+  background: color-mix(in srgb, var(--primary) 56%, var(--bg-secondary));
+}
+
+:root[data-theme="light"] .more-menu-item .ant-segmented-thumb {
+  background: color-mix(in srgb, var(--primary) 22%, #ffffff);
+}
+
+/* 选中项文字：在亮色选中块上用深色字，提高对比度 */
+.more-menu-item .ant-segmented-item-selected,
+.more-menu-item .ant-segmented-item-selected * {
+  color: var(--bg-secondary) !important;
+  font-weight: 700;
+}
+
+/* 选中项 hover/active：保持深色字，避免被 antd hover 样式覆盖成黑/灰 */
+.more-menu-item .ant-segmented-item-selected:hover,
+.more-menu-item .ant-segmented-item-selected:hover *,
+.more-menu-item .ant-segmented-item-selected:active,
+.more-menu-item .ant-segmented-item-selected:active * {
+  color: var(--bg-secondary) !important;
+}
+
+:root[data-theme="light"] .more-menu-item .ant-segmented-item-selected,
+:root[data-theme="light"] .more-menu-item .ant-segmented-item-selected * {
+  color: var(--text-primary) !important;
+}
+
+.more-menu-label {
+  color: var(--text-secondary);
+}
+
+.more-menu-section {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* Dropdown 菜单 hover/active/selected：三主题更明显 */
+.app-header :where(.ant-dropdown-menu) {
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 18%, transparent);
+}
+
+.app-header :where(.ant-dropdown-menu-item) {
+  color: var(--text-primary);
+}
+
+.app-header :where(.ant-dropdown-menu-item):hover {
+  background: color-mix(in srgb, var(--primary) 14%, var(--bg-secondary));
+}
+
+.app-header :where(.ant-dropdown-menu-item):active {
+  background: color-mix(in srgb, var(--primary) 18%, var(--bg-secondary));
+}
+
+.is-selected {
+  color: var(--primary) !important;
+  font-weight: 600;
+}
+
+.app-header :where(.ant-dropdown-menu-item.is-selected):hover {
+  background: color-mix(in srgb, var(--primary) 18%, var(--bg-secondary));
+}
+
+/* 移动端：两行布局（第一行品牌+按钮，第二行搜索） */
+@media (max-width: 768px) {
+  .app-header {
+    height: auto;
+    padding: 0.75rem 0.9rem;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "left right"
+      "center center";
+    gap: 0.6rem;
+  }
+
+  .header-left {
+    grid-area: left;
+  }
+
+  .header-right {
+    grid-area: right;
+  }
+
+  .header-center {
+    grid-area: center;
+    justify-content: stretch;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .logo-img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .site-title {
+    font-size: 1.1rem;
+  }
 }
