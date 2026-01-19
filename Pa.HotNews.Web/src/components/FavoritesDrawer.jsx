@@ -23,6 +23,7 @@ function FavoritesDrawer({
 }) {
   return (
     <Drawer
+      className="favorites-drawer"
       title={`收藏（${favoriteCount}）`}
       placement="right"
       width={420}

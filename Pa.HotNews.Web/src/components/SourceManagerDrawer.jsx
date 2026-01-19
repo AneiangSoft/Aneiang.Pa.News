@@ -27,6 +27,7 @@ function SourceManagerDrawer({
 
   return (
     <Drawer
+      className="source-mgr-drawer"
       title="来源管理"
       placement="right"
       width={width}
