@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { startTransition, useCallback, useMemo, useState } from 'react';
 
 export function useFavorites({ favoriteMap, setFavoriteMap }) {
   const isFavorited = useCallback((url) => !!(url && favoriteMap && favoriteMap[url]), [favoriteMap]);
@@ -6,19 +6,21 @@ export function useFavorites({ favoriteMap, setFavoriteMap }) {
   const toggleFavorite = useCallback(
     (item, source) => {
       if (!item?.url) return;
-      setFavoriteMap(prev => {
-        const next = { ...(prev || {}) };
-        if (next[item.url]) {
-          delete next[item.url];
-        } else {
-          next[item.url] = {
-            url: item.url,
-            title: item.title,
-            source,
-            ts: Date.now(),
-          };
-        }
-        return next;
+      startTransition(() => {
+        setFavoriteMap(prev => {
+          const next = { ...(prev || {}) };
+          if (next[item.url]) {
+            delete next[item.url];
+          } else {
+            next[item.url] = {
+              url: item.url,
+              title: item.title,
+              source,
+              ts: Date.now(),
+            };
+          }
+          return next;
+        });
       });
     },
     [setFavoriteMap]

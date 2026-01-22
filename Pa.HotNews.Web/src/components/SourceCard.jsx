@@ -1,4 +1,6 @@
-import { Card, List, Button, Tooltip, Space, Spin, Empty, Tag } from 'antd';
+import { memo } from 'react';
+import { Card, Button, Tooltip, Space, Spin, Empty, Tag } from 'antd';
+import VirtualList from 'rc-virtual-list';
 import {
   SyncOutlined,
   CopyOutlined,
@@ -146,61 +148,61 @@ function SourceCard({
         </div>
       ) : status === 'success' ? (
         filtered?.length ? (
-          <List
-            className="news-list"
-            dataSource={filtered}
-            renderItem={(item, idx) => (
-              <List.Item>
-                <span className="news-rank">{idx + 1}</span>
+          <div className="news-list news-list-virtual news-list-fade">
+            <VirtualList
+              data={filtered}
+              height={NEWS_UI?.list?.virtualHeight || 420}
+              itemHeight={NEWS_UI?.list?.virtualItemHeight || 36}
+              itemKey={(item, index) => item?.url || `${src}-${index}`}
+            >
+              {(item, idx) => (
+                <div className="ant-list-item">
+                  <span className="news-rank">{idx + 1}</span>
 
-                <Tooltip
-                  title={item.title}
-                  placement="topLeft"
-                  mouseEnterDelay={0.2}
-                >
-                  <a
-                    href={item.url}
-                    target={shouldOpenInNewTab ? '_blank' : undefined}
-                    rel={shouldOpenInNewTab ? 'noopener noreferrer' : undefined}
-                    className={readSet.has(item.url) ? 'is-read' : ''}
-                    onClick={e => {
-                      // 当选择“站内阅读”时：支持 Ctrl/⌘ + 点击新标签页打开
-                      const openInNewTab = e.ctrlKey || e.metaKey;
+                  <Tooltip
+                    title={item.title}
+                    placement="topLeft"
+                    mouseEnterDelay={0.2}
+                  >
+                    <a
+                      href={item.url}
+                      target={shouldOpenInNewTab ? '_blank' : undefined}
+                      rel={shouldOpenInNewTab ? 'noopener noreferrer' : undefined}
+                      className={readSet.has(item.url) ? 'is-read' : ''}
+                      onClick={e => {
+                        const openInNewTab = e.ctrlKey || e.metaKey;
 
-                      // 1) 用户偏好为“新标签页”
-                      // 2) 用户按住 Ctrl/⌘
-                      // 3) 当前来源不支持站内阅读（站内模式下）
-                      // 以上任一情况：都强制新标签页打开
-                      if (shouldOpenInNewTab || openInNewTab) {
+                        if (shouldOpenInNewTab || openInNewTab) {
+                          e.preventDefault();
+                          window.open(item.url, '_blank', 'noopener,noreferrer');
+                          return;
+                        }
+
                         e.preventDefault();
-                        window.open(item.url, '_blank', 'noopener,noreferrer');
-                        return;
-                      }
+                        markAsRead(item.url);
+                        onOpenItem({ url: item.url, title: item.title, source: src });
+                      }}
+                    >
+                      {highlightText(item.title, q)}
+                    </a>
+                  </Tooltip>
 
+                  <button
+                    type="button"
+                    className={isFavorited(item.url) ? 'fav-btn is-fav' : 'fav-btn'}
+                    title={isFavorited(item.url) ? '取消收藏' : '收藏'}
+                    onClick={e => {
                       e.preventDefault();
-                      markAsRead(item.url);
-                      onOpenItem({ url: item.url, title: item.title, source: src });
+                      e.stopPropagation();
+                      toggleFavorite(item, src);
                     }}
                   >
-                    {highlightText(item.title, q)}
-                  </a>
-                </Tooltip>
-
-                <button
-                  type="button"
-                  className={isFavorited(item.url) ? 'fav-btn is-fav' : 'fav-btn'}
-                  title={isFavorited(item.url) ? '取消收藏' : '收藏'}
-                  onClick={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleFavorite(item, src);
-                  }}
-                >
-                  {isFavorited(item.url) ? <StarFilled /> : <StarOutlined />}
-                </button>
-              </List.Item>
-            )}
-          />
+                    {isFavorited(item.url) ? <StarFilled /> : <StarOutlined />}
+                  </button>
+                </div>
+              )}
+            </VirtualList>
+          </div>
         ) : (
           <div className="card-state-body">
             <Empty description={q ? '没有匹配结果' : '暂无数据'} />
@@ -216,4 +218,4 @@ function SourceCard({
   );
 }
 
-export default SourceCard;
+export default memo(SourceCard);

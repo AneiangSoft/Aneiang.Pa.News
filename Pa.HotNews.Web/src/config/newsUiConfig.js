@@ -16,6 +16,10 @@ export const NEWS_UI = {
     pageTitle: 'Aneiang 热榜聚合',
     pageText: '全网热点实时聚合（知乎/微博/抖音/头条/B站等）',
   },
+  list: {
+    virtualHeight: 420,
+    virtualItemHeight: 48,
+  },
 };
 
 export const GROUPS = [

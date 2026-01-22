@@ -53,3 +53,7 @@
 .card-title-tag.is-subtle .anticon {
   color: var(--text-secondary) !important;
 }
+
+.news-list .ant-list-item {
+  min-height: var(--news-item-height, 36px);
+}

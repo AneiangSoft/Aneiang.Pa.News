@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Empty, Drawer, Input, Button, Grid, Tabs } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import SourceCard from './SourceCard';
@@ -42,6 +42,8 @@ function NewsGrid({
   const isMobile = (screens.md === false);
   const q = (query || '').trim().toLowerCase();
 
+  const highlightTitle = useCallback((t) => highlightText(t, query), [highlightText, query]);
+
   // 手机端来源选择器状态（Hook 必须始终调用，不能放在任何 return 之后）
   const [activeSrc, setActiveSrc] = useState(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -54,33 +56,37 @@ function NewsGrid({
   // 轻量 swipe 状态：只在手机端生效
   const swipeRef = useRef({ x0: 0, y0: 0, dx: 0, dy: 0, active: false });
 
-  const cards = (displaySources || []).map(src => {
-    const block = newsBySource?.[src];
-    const status = block?.status || 'loading';
-    const news = block?.list;
-    const updatedTime = block?.updatedTime;
-    const errorMsg = block?.error;
-    const filtered = q
-      ? (news || []).filter(n => (n?.title || '').toLowerCase().includes(q))
-      : news;
+  const cards = useMemo(() => {
+    return (displaySources || []).map(src => {
+      const block = newsBySource?.[src];
+      const status = block?.status || 'loading';
+      const news = block?.list;
+      const updatedTime = block?.updatedTime;
+      const errorMsg = block?.error;
+      const filtered = q
+        ? (news || []).filter(n => (n?.title || '').toLowerCase().includes(q))
+        : news;
 
-    const iframeSupported = !(noIframeSources && noIframeSources.has(String(src).toLowerCase()));
+      const iframeSupported = !(noIframeSources && noIframeSources.has(String(src).toLowerCase()));
 
-    return {
-      src,
-      status,
-      news,
-      updatedTime,
-      errorMsg,
-      filtered,
-      title: getChineseSourceName(src),
-      iframeSupported,
-    };
-  });
+      return {
+        src,
+        status,
+        news,
+        updatedTime,
+        errorMsg,
+        filtered,
+        title: getChineseSourceName(src),
+        iframeSupported,
+      };
+    });
+  }, [displaySources, newsBySource, q, noIframeSources, getChineseSourceName]);
 
-  const visibleCards = cards
-    // 搜索时：只展示“有匹配数据”的卡片（避免一堆空卡片）
-    .filter(x => (q ? x.status !== 'success' || (x.filtered?.length ?? 0) > 0 : true));
+  const visibleCards = useMemo(() => {
+    return cards
+      // 搜索时：只展示“有匹配数据”的卡片（避免一堆空卡片）
+      .filter(x => (q ? x.status !== 'success' || (x.filtered?.length ?? 0) > 0 : true));
+  }, [cards, q]);
 
   const groupTabs = useMemo(() => {
     const byGroup = new Map();
@@ -345,7 +351,7 @@ function NewsGrid({
               isGeneratingPoster={isGeneratingPoster}
               getFullTimeString={getFullTimeString}
               formatTime={formatTime}
-              highlightText={(t) => highlightText(t, query)}
+              highlightText={highlightTitle}
               retrySource={retrySource}
             />
           ) : (
@@ -457,7 +463,7 @@ function NewsGrid({
         <Tabs
           activeKey={activeGroup || (groupTabs[0]?.key ?? '')}
           items={tabItems}
-          onChange={(k) => setActiveGroup(k)}
+          onChange={(k) => startTransition(() => setActiveGroup(k))}
         />
       </div>
 
@@ -484,7 +490,7 @@ function NewsGrid({
           isGeneratingPoster={isGeneratingPoster}
           getFullTimeString={getFullTimeString}
           formatTime={formatTime}
-          highlightText={(t) => highlightText(t, query)}
+          highlightText={highlightTitle}
           retrySource={retrySource}
         />
       ))}

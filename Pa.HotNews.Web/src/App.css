@@ -390,9 +390,79 @@ body {
   padding: 0.5rem 0;
 }
 
-.news-list::-webkit-scrollbar {
-  width: 6px;
+.news-list.news-list-virtual {
+  overflow-y: hidden;
+  max-height: none;
+  padding: 0.5rem 0;
+  position: relative;
+  padding-right: 0;
 }
+
+.news-list.news-list-virtual.news-list-fade::before,
+.news-list.news-list-virtual.news-list-fade::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 14px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.news-list.news-list-virtual.news-list-fade::before {
+  top: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.18),
+    transparent
+  );
+}
+
+.news-list.news-list-virtual.news-list-fade::after {
+  bottom: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.18),
+    transparent
+  );
+}
+
+:root[data-theme="light"] .news-list.news-list-virtual.news-list-fade::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.90),
+    transparent
+  );
+}
+
+:root[data-theme="light"] .news-list.news-list-virtual.news-list-fade::after {
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.90),
+    transparent
+  );
+}
+
+:root[data-theme="warm"] .news-list.news-list-virtual.news-list-fade::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(24, 22, 19, 0.26),
+    transparent
+  );
+}
+
+:root[data-theme="warm"] .news-list.news-list-virtual.news-list-fade::after {
+  background: linear-gradient(
+    to top,
+    rgba(24, 22, 19, 0.26),
+    transparent
+  );
+}
+
+.news-list.news-list-virtual > .rc-virtual-list {
+  overflow: hidden;
+}
+
 
 .news-list::-webkit-scrollbar-track {
   background: transparent;
