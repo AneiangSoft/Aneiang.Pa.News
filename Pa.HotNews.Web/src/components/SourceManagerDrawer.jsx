@@ -1,6 +1,90 @@
+import { useMemo, useState } from 'react';
 import { Drawer, Button, Checkbox, List, Divider } from 'antd';
-import { ArrowUpOutlined as UpOutlined, ArrowDownOutlined as DownOutlined } from '@ant-design/icons';
+import { ArrowUpOutlined as UpOutlined, ArrowDownOutlined as DownOutlined, MenuOutlined } from '@ant-design/icons';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import './SourceManagerDrawer.css';
+
+function SortableRow({ id, children, disabled }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={isDragging ? 'source-mgr-dragging' : undefined}>
+      {children({ attributes, listeners, isDragging })}
+    </div>
+  );
+}
+
+function SourceRowContent({
+  src,
+  idx,
+  lastIdx,
+  visible,
+  getChineseSourceName,
+  setSourceVisible,
+  moveSource,
+  handleProps,
+  dragging,
+  showActions,
+}) {
+  return (
+    <div className={`source-mgr-row${dragging ? ' is-dragging' : ''}`}>
+      <span className="source-mgr-handle" {...handleProps} title="拖拽排序">
+        <MenuOutlined />
+      </span>
+
+      <Checkbox checked={visible} onChange={e => setSourceVisible(src, e.target.checked)}>
+        {getChineseSourceName(src)}
+      </Checkbox>
+
+      {showActions ? (
+        <span className="source-mgr-actions">
+          <Button
+            key="up"
+            type="text"
+            icon={<UpOutlined />}
+            disabled={idx === 0}
+            onClick={() => moveSource(src, 'up')}
+          />
+          <Button
+            key="down"
+            type="text"
+            icon={<DownOutlined />}
+            disabled={idx === lastIdx}
+            onClick={() => moveSource(src, 'down')}
+          />
+        </span>
+      ) : (
+        <span className="source-mgr-actions" aria-hidden="true" />
+      )}
+    </div>
+  );
+}
 
 function SourceManagerDrawer({
   open,
@@ -13,6 +97,7 @@ function SourceManagerDrawer({
   resetSourceCfg,
   setSourceVisible,
   moveSource,
+  setSourceOrder,
 }) {
   const dataSource = (sourceCfg.order || []).length ? sourceCfg.order : allSources;
 
@@ -24,6 +109,52 @@ function SourceManagerDrawer({
     : false;
 
   const checked = totalCount ? hiddenCount === 0 : true;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    })
+  );
+
+  const items = useMemo(() => (dataSource || []).map(s => String(s).toLowerCase()), [dataSource]);
+
+  const [activeId, setActiveId] = useState(null);
+
+  const onDragStart = (event) => {
+    setActiveId(event?.active?.id ?? null);
+  };
+
+  const onDragCancel = () => {
+    setActiveId(null);
+  };
+
+  const onDragEnd = (event) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!active?.id || !over?.id) return;
+    if (active.id === over.id) return;
+
+    const oldIndex = items.indexOf(active.id);
+    const newIndex = items.indexOf(over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const next = arrayMove(items, oldIndex, newIndex);
+    if (typeof setSourceOrder === 'function') {
+      setSourceOrder(next);
+    }
+  };
+
+  const overlaySrc = activeId ? String(activeId).toLowerCase() : null;
+
+  // 固定为浅色视觉（不随主题变化）
+  const lightContentBg = '#ffffff';
+  const lightHeaderBg = '#ffffff';
+  const lightBorder = 'rgba(15, 23, 42, 0.10)';
+  const lightText = 'rgba(15, 23, 42, 0.92)';
+  const lightTextSecondary = 'rgba(51, 65, 85, 0.86)';
 
   return (
     <Drawer
@@ -38,27 +169,34 @@ function SourceManagerDrawer({
           重置
         </Button>
       }
+      styles={{
+        content: {
+          background: lightContentBg,
+        },
+        header: {
+          background: lightHeaderBg,
+          borderBottom: `1px solid ${lightBorder}`,
+        },
+        body: {
+          background: lightContentBg,
+          color: lightText,
+        },
+      }}
     >
-      <div className="source-mgr-tip">
-        勾选显示/隐藏来源；使用上下箭头调整卡片顺序。
+      <div className="source-mgr-tip" style={{ color: lightTextSecondary }}>
+        勾选显示/隐藏来源；拖拽手柄调整卡片顺序（也可用上下箭头微调）。
       </div>
 
-      <div className="source-mgr-selectall">
+      <div className="source-mgr-selectall" style={{ color: lightText }}>
         <Checkbox
           indeterminate={indeterminate}
           checked={checked}
           onChange={e => {
             const nextChecked = e.target.checked;
             if (nextChecked) {
-              // 全选：清空 hidden
-              // 交给父组件处理更稳，这里用 setSourceVisible 批量操作
-              // 但为了保持与原逻辑一致，我们直接模拟“隐藏清空”行为：
-              // 父组件当前实现是 setSourceCfg(prev => ({...prev, hidden: []}))，
-              // 这里无法直接访问 setSourceCfg，所以退回逐个设为可见。
-              dataSource.forEach(s => setSourceVisible(String(s).toLowerCase(), true));
+              items.forEach(s => setSourceVisible(String(s).toLowerCase(), true));
             } else {
-              // 全部隐藏
-              dataSource.forEach(s => setSourceVisible(String(s).toLowerCase(), false));
+              items.forEach(s => setSourceVisible(String(s).toLowerCase(), false));
             }
           }}
         >
@@ -66,43 +204,71 @@ function SourceManagerDrawer({
         </Checkbox>
       </div>
 
-      <List
-        dataSource={dataSource}
-        renderItem={(s, idx) => {
-          const src = String(s).toLowerCase();
-          const visible = !hiddenSet.has(src);
-          const lastIdx = dataSource.length - 1;
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={onDragStart}
+        onDragCancel={onDragCancel}
+        onDragEnd={onDragEnd}
+      >
+        <SortableContext items={items} strategy={verticalListSortingStrategy}>
+          <List
+            className="source-mgr-list"
+            dataSource={items}
+            renderItem={(src, idx) => {
+              const visible = !hiddenSet.has(src);
+              const lastIdx = items.length - 1;
 
-          return (
-            <List.Item
-              className="source-mgr-item"
-              actions={[
-                <Button
-                  key="up"
-                  type="text"
-                  icon={<UpOutlined />}
-                  disabled={idx === 0}
-                  onClick={() => moveSource(src, 'up')}
-                />,
-                <Button
-                  key="down"
-                  type="text"
-                  icon={<DownOutlined />}
-                  disabled={idx === lastIdx}
-                  onClick={() => moveSource(src, 'down')}
-                />,
-              ]}
-            >
-              <Checkbox checked={visible} onChange={e => setSourceVisible(src, e.target.checked)}>
-                {getChineseSourceName(src)}
-              </Checkbox>
-            </List.Item>
-          );
-        }}
-      />
+              return (
+                <SortableRow id={src}>
+                  {({ attributes, listeners, isDragging }) => (
+                    <List.Item className="source-mgr-item">
+                      <SourceRowContent
+                        src={src}
+                        idx={idx}
+                        lastIdx={lastIdx}
+                        visible={visible}
+                        getChineseSourceName={getChineseSourceName}
+                        setSourceVisible={setSourceVisible}
+                        moveSource={moveSource}
+                        handleProps={{ ...attributes, ...listeners }}
+                        dragging={isDragging}
+                        showActions
+                      />
+                    </List.Item>
+                  )}
+                </SortableRow>
+              );
+            }}
+          />
+        </SortableContext>
+
+        <DragOverlay dropAnimation={null}>
+          {overlaySrc ? (
+            <div className="source-mgr-ghost" aria-hidden="true">
+              <div className="source-mgr-item">
+                <SourceRowContent
+                  src={overlaySrc}
+                  idx={-1}
+                  lastIdx={-1}
+                  visible={!hiddenSet.has(overlaySrc)}
+                  getChineseSourceName={getChineseSourceName}
+                  setSourceVisible={() => {}}
+                  moveSource={() => {}}
+                  handleProps={{}}
+                  dragging
+                  showActions={false}
+                />
+              </div>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       <Divider />
-      <div className="source-mgr-footer-tip">提示：隐藏来源不会删除数据，只是不在首页展示。</div>
+      <div className="source-mgr-footer-tip" style={{ color: lightTextSecondary }}>
+        提示：隐藏来源不会删除数据，只是不在首页展示。
+      </div>
     </Drawer>
   );
 }

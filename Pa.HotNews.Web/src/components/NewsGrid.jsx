@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Empty, Drawer, Input, Button, Grid, Tabs } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import SourceCard from './SourceCard';
+import { GROUPS, NEWS_UI, buildGroupIndex } from '../config/newsUiConfig';
 import './NewsGrid.css';
 
 function NewsGrid({
@@ -24,43 +25,18 @@ function NewsGrid({
   retrySource,
   noIframeSources,
 }) {
-  const GROUP_ORDER = useMemo(() => ['全部', '热点', '社区', '技术', '商业', '视频', '其他'], []);
+  const groupIndex = useMemo(() => buildGroupIndex(), []);
+  const GROUP_ORDER = useMemo(() => GROUPS.map(g => g.label), []);
 
-  const SOURCE_GROUP_MAP = useMemo(() => ({
-    // 热点（热榜 + 资讯媒体）
-    weibo: '热点',
-    baidu: '热点',
-    toutiao: '热点',
-    tencent: '热点',
-    thepaper: '热点',
-    ifeng: '热点',
+  const getGroupOfSource = useMemo(() => {
+    const otherLabel = GROUPS.find(x => x.key === 'other')?.label || '其他';
+    return (src) => {
+      const key = String(src || '').toLowerCase();
+      const g = groupIndex[key];
+      return g?.label || otherLabel;
+    };
+  }, [groupIndex]);
 
-    // 社区
-    zhihu: '社区',
-    v2ex: '社区',
-    tieba: '社区',
-    hupu: '社区',
-    douban: '社区',
-
-    // 技术
-    juejin: '技术',
-    csdn: '技术',
-    cnblog: '技术',
-    github: '技术',
-
-    // 商业
-    _36kr: '商业',
-    ithome: '商业',
-
-    // 视频
-    douyin: '视频',
-    bilibili: '视频',
-  }), []);
-
-  const getGroupOfSource = useCallback((src) => {
-    const key = String(src || '').toLowerCase();
-    return SOURCE_GROUP_MAP[key] || '其他';
-  }, [SOURCE_GROUP_MAP]);
   const { useBreakpoint } = Grid;
   const screens = useBreakpoint();
   const isMobile = (screens.md === false);
@@ -115,9 +91,10 @@ function NewsGrid({
       byGroup.get(group).push(card);
     }
 
-    // “全部”组：用于默认展示全部来源（仍然遵循 visibleCards 的过滤逻辑）
-    if (visibleCards.length) {
-      byGroup.set('全部', visibleCards);
+    // “全部”组：从配置读取 label
+    const allGroup = GROUPS.find(g => g.key === 'all');
+    if (allGroup && visibleCards.length) {
+      byGroup.set(allGroup.label, visibleCards);
     }
 
     // 按预设顺序输出（不存在的组不显示）
@@ -141,20 +118,35 @@ function NewsGrid({
     return tabs;
   }, [visibleCards, GROUP_ORDER, getGroupOfSource]);
 
+  const DEFAULT_GROUP_LABEL = useMemo(() => {
+    const defKey = NEWS_UI?.tabs?.defaultGroupKey || 'all';
+    const g = GROUPS.find(x => x.key === defKey);
+    return g?.label || groupTabs[0]?.key || null;
+  }, [groupTabs]);
+
   // 桌面端 tabs 当前激活分组
-  const [activeGroup, setActiveGroup] = useState(null);
+  const [activeGroup, setActiveGroup] = useState(DEFAULT_GROUP_LABEL);
 
   useEffect(() => {
     if (isMobile) return;
-    const next = groupTabs[0]?.key ?? null;
-    if (!next) {
+    if (!groupTabs.length) {
       if (activeGroup !== null) setActiveGroup(null);
       return;
     }
-    if (!activeGroup || !groupTabs.some(t => t.key === activeGroup)) {
-      setActiveGroup(next);
+
+    const desired = DEFAULT_GROUP_LABEL || groupTabs[0]?.key;
+    const exists = activeGroup && groupTabs.some(t => t.key === activeGroup);
+
+    if (!exists) {
+      setActiveGroup(desired || null);
+      return;
     }
-  }, [isMobile, groupTabs, activeGroup]);
+
+    // 若当前为空（首次渲染）也对齐默认
+    if (!activeGroup && desired) {
+      setActiveGroup(desired);
+    }
+  }, [isMobile, groupTabs, DEFAULT_GROUP_LABEL, activeGroup]);
 
   const desktopActiveTab = useMemo(() => {
     if (isMobile) return null;
@@ -406,16 +398,40 @@ function NewsGrid({
     );
   }
 
-  // 桌面端：使用 Tabs 按分组切换
-  const tabItems = (groupTabs || []).map(t => ({
-    key: t.key,
-    label: (
-      <>
-        {t.label}
-        <span className="newsgrid-tab-count">{t.cards.length}</span>
-      </>
-    ),
-  }));
+  // 桌面端：使用 Tabs 按分组切换（完全由配置驱动）
+  const countMode = NEWS_UI?.tabs?.countMode || 'sourceCount';
+  const showDot = NEWS_UI?.tabs?.showDot !== false;
+
+  const tabItems = (groupTabs || []).map(t => {
+    const groupDef = GROUPS.find(g => g.label === t.label);
+    const dotColor = groupDef?.dotColor;
+
+    const count = (() => {
+      if (countMode === 'hidden') return null;
+      if (countMode === 'newsCount') {
+        return (t.cards || []).reduce((sum, c) => sum + ((q ? (c.filtered?.length ?? 0) : (c.news?.length ?? 0))), 0);
+      }
+      // sourceCount
+      return (t.cards || []).length;
+    })();
+
+    return {
+      key: t.key,
+      label: (
+        <>
+          {showDot ? (
+            <span
+              className="newsgrid-tab-dot"
+              style={dotColor ? { background: dotColor } : undefined}
+              aria-hidden="true"
+            />
+          ) : null}
+          {t.label}
+          {count !== null ? <span className="newsgrid-tab-count">{count}</span> : null}
+        </>
+      ),
+    };
+  });
 
   return (
     <div className="news-grid">

@@ -263,7 +263,7 @@ body {
 
 .source-card .ant-card-head {
   border-bottom: 1px solid var(--card-border);
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--source-head-bg, rgba(0, 0, 0, 0.2));
   padding: 0 1.25rem;
   min-height: 3.5rem;
 }
@@ -698,83 +698,6 @@ body {
   animation: fadeIn 0.3s ease-out forwards;
 }
 
-/* ========== Source Specific Colors (lowercase, brighter) ========== */
-/* 重要：App.jsx 已把 data-source 统一为小写 */
-.source-card[data-source="zhihu"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(0, 132, 255, 0.70), rgba(0, 161, 255, 0.40));
-}
-
-.source-card[data-source="weibo"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(255, 130, 0, 0.72), rgba(255, 157, 0, 0.44));
-}
-
-.source-card[data-source="baidu"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(41, 50, 225, 0.70), rgba(74, 84, 232, 0.42));
-}
-
-.source-card[data-source="douyin"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.68), rgba(51, 51, 51, 0.38));
-}
-
-.source-card[data-source="bilibili"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(251, 114, 153, 0.70), rgba(255, 133, 173, 0.42));
-}
-
-.source-card[data-source="hupu"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(229, 57, 53, 0.70), rgba(244, 67, 54, 0.40));
-}
-
-.source-card[data-source="tencent"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(59, 130, 246, 0.66), rgba(14, 165, 233, 0.36));
-}
-
-.source-card[data-source="juejin"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(22, 163, 74, 0.45), rgba(56, 189, 248, 0.26));
-}
-
-.source-card[data-source="thepaper"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(167, 139, 250, 0.50), rgba(99, 102, 241, 0.28));
-}
-
-.source-card[data-source="douban"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(34, 197, 94, 0.45), rgba(16, 185, 129, 0.26));
-}
-
-.source-card[data-source="ifeng"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(245, 158, 11, 0.46), rgba(249, 115, 22, 0.26));
-}
-
-.source-card[data-source="cnblog"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(148, 163, 184, 0.36), rgba(71, 85, 105, 0.22));
-}
-
-.source-card[data-source="csdn"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(239, 68, 68, 0.50), rgba(244, 63, 94, 0.28));
-}
-
-.source-card[data-source="github"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(36, 41, 46, 0.62), rgba(47, 54, 61, 0.30));
-}
-
-.source-card[data-source="v2ex"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(30, 136, 229, 0.48), rgba(66, 165, 245, 0.26));
-}
-
-.source-card[data-source="tieba"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(30, 136, 229, 0.48), rgba(33, 150, 243, 0.26));
-}
-
-.source-card[data-source="ithome"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(0, 152, 255, 0.56), rgba(0, 171, 255, 0.32));
-}
-
-.source-card[data-source="_36kr"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(0, 188, 212, 0.45), rgba(0, 172, 193, 0.26));
-}
-
-.source-card[data-source="toutiao"] .ant-card-head {
-  background: linear-gradient(90deg, rgba(255, 77, 79, 0.48), rgba(255, 120, 117, 0.26));
-}
 
 /* ========== Global Productized States & Antd Theme Overrides ========== */
 
@@ -906,6 +829,10 @@ body {
 .ant-modal .ant-modal-content {
   background: color-mix(in srgb, var(--bg-secondary) 92%, transparent) !important;
   border: 1px solid color-mix(in srgb, var(--text-secondary) 14%, transparent) !important;
+}
+
+.ant-drawer .ant-drawer-body {
+  background: transparent !important;
 }
 
 /* 默认 header 透明时在深色/护眼可能对比不足：为标题区提供更稳定的底色 */

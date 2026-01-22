@@ -7,6 +7,31 @@
   min-width: 0;
 }
 
+.card-title-logo {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  object-fit: contain;
+  flex: 0 0 auto;
+
+  /* 更产品化：轻玻璃底 + 细描边 + 高光 */
+  background: color-mix(in srgb, var(--bg-secondary) 68%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 20%, transparent);
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+  /* 让小尺寸图标更清晰 */
+  padding: 2px;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+:root[data-theme="light"] .card-title-logo {
+  box-shadow:
+    0 10px 20px rgba(15, 23, 42, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.60);
+}
+
 .card-title-text {
   min-width: 0;
   overflow: hidden;

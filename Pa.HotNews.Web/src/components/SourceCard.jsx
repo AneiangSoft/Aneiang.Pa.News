@@ -8,11 +8,13 @@ import {
   StopOutlined,
 } from '@ant-design/icons';
 
+import { NEWS_UI, getSourceHeaderStyle, getSourceCapabilities, getSourceLogo } from '../config/newsUiConfig';
 import './SourceCard.css';
 
 function SourceCard({
   src,
   title,
+  theme,
   status,
   news,
   filtered,
@@ -35,18 +37,37 @@ function SourceCard({
   // 是否支持站内阅读（iframe）
   iframeSupported = true,
 }) {
-  const shouldOpenInNewTab = linkBehavior === 'new-tab' || (linkBehavior === 'in-app' && !iframeSupported);
+  const caps = getSourceCapabilities(src);
+  const computedIframeSupported = iframeSupported && (caps?.iframe !== false);
+  const shouldOpenInNewTab = linkBehavior === 'new-tab' || (linkBehavior === 'in-app' && !computedIframeSupported);
+
+  const headerStyle = getSourceHeaderStyle(src);
+  const logoSrc = getSourceLogo(src, theme);
+  const headStyle = headerStyle ? { '--source-head-bg': headerStyle.background } : undefined;
 
   return (
     <Card
       key={src}
+      style={headStyle}
       title={
         <span className="card-title">
+          {logoSrc ? (
+            <img
+              className="card-title-logo"
+              src={logoSrc}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          ) : null}
           <span className="card-title-text">{title}</span>
-          {linkBehavior === 'in-app' && !iframeSupported ? (
-            <Tooltip title="该来源可能无法站内阅读，点击将直接在新标签页打开（也可 Ctrl/⌘ + 点击标题）">
+          {linkBehavior === 'in-app' && !computedIframeSupported ? (
+            <Tooltip title={NEWS_UI?.i18n?.iframeBlockedTip || '该来源可能无法站内阅读，点击将直接在新标签页打开（也可 Ctrl/⌘ + 点击标题）'}>
               <Tag className="card-title-tag is-subtle" icon={<StopOutlined />}>
-                站内受限
+                {NEWS_UI?.i18n?.iframeBlockedTag || '站内受限'}
               </Tag>
             </Tooltip>
           ) : null}
@@ -136,7 +157,6 @@ function SourceCard({
                   title={item.title}
                   placement="topLeft"
                   mouseEnterDelay={0.2}
-                  overlayClassName="news-title-tooltip"
                 >
                   <a
                     href={item.url}

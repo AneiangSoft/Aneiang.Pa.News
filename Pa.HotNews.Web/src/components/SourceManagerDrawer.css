@@ -1,7 +1,79 @@
-/* 来源管理 Drawer */
+/* 来源管理 Drawer：固定使用浅色主题风格（无论当前全局主题） */
+
+/* 头部布局：让 title/extra/close 互不挤压，extra 永远不被裁切 */
+.source-mgr-drawer .ant-drawer-header {
+  overflow: visible;
+}
+
+/* 抽屉整体固定浅色背景 */
+.source-mgr-drawer .ant-drawer-content {
+  background: #ffffff !important;
+}
+
+.source-mgr-drawer .ant-drawer-body {
+  background: #ffffff !important;
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+.source-mgr-drawer .ant-drawer-header-title {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.source-mgr-drawer .ant-drawer-title {
+  min-width: 0;
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+.source-mgr-drawer .ant-drawer-title * {
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+.source-mgr-drawer .ant-drawer-close,
+.source-mgr-drawer .ant-drawer-close * {
+  color: rgba(51, 65, 85, 0.86) !important;
+}
+
+.source-mgr-drawer .ant-drawer-close:hover,
+.source-mgr-drawer .ant-drawer-close:hover * {
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+.source-mgr-drawer .ant-drawer-extra {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 12px;
+  flex: 0 0 auto;
+}
+
+/* 重置按钮：固定为“白底深字”以适配头部可能出现的深色背景 */
+.source-mgr-drawer .ant-drawer-extra .ant-btn.ant-btn-default {
+  color: rgba(15, 23, 42, 0.92) !important;
+  border-color: rgba(15, 23, 42, 0.14) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: none !important;
+}
+
+.source-mgr-drawer .ant-drawer-extra .ant-btn.ant-btn-default:hover {
+  color: rgba(15, 23, 42, 0.92) !important;
+  border-color: rgba(15, 23, 42, 0.22) !important;
+  background: #ffffff !important;
+}
+
+.source-mgr-drawer .ant-drawer-extra .ant-btn.ant-btn-default:active {
+  border-color: rgba(15, 23, 42, 0.26) !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+}
+
+.source-mgr-drawer .ant-drawer-extra .ant-btn.ant-btn-default:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18) !important;
+}
+
+/* ============ 内容区域 ============ */
 
 .source-mgr-tip {
-  color: var(--text-secondary);
+  color: rgba(51, 65, 85, 0.86);
   font-size: 12px;
   margin-bottom: 10px;
 }
@@ -10,11 +82,126 @@
   margin-bottom: 10px;
 }
 
-.source-mgr-item .ant-list-item-action {
-  margin-inline-start: 8px;
+/* Checkbox 文本固定为深色 */
+.source-mgr-drawer .ant-checkbox-wrapper {
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+.source-mgr-list .ant-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 12px; /* 右侧留白：让箭头不贴边 */
+}
+
+/* List.Item 作为容器：提供圆角与 hover 背景（固定浅色） */
+.source-mgr-item {
+  border-radius: 10px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.source-mgr-item:hover {
+  background: rgba(37, 99, 235, 0.06);
+  border-color: rgba(15, 23, 42, 0.10);
+}
+
+.source-mgr-item.ant-list-item {
+  padding: 8px 12px 8px 10px;
+}
+
+.source-mgr-row {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  width: 100%;
+}
+
+.source-mgr-row .ant-checkbox-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.source-mgr-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.source-mgr-actions .ant-btn {
+  width: 30px;
+  height: 30px;
+}
+
+/* 上下按钮固定深色 */
+.source-mgr-actions .ant-btn,
+.source-mgr-actions .ant-btn .anticon {
+  color: rgba(15, 23, 42, 0.92) !important;
+}
+
+.source-mgr-actions .ant-btn:disabled,
+.source-mgr-actions .ant-btn:disabled .anticon {
+  color: rgba(71, 85, 105, 0.35) !important;
+}
+
+.source-mgr-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 8px;
+  border-radius: 8px;
+
+  color: rgba(51, 65, 85, 0.86);
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.10);
+
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.source-mgr-handle svg {
+  opacity: 0.75;
+}
+
+.source-mgr-handle:hover {
+  color: rgba(15, 23, 42, 0.92);
+  border-color: rgba(15, 23, 42, 0.18);
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.source-mgr-handle:hover svg {
+  opacity: 1;
+}
+
+.source-mgr-handle:active {
+  cursor: grabbing;
+}
+
+/* 拖拽时：原位置占位淡化 */
+.source-mgr-dragging {
+  opacity: 0.35;
+}
+
+/* DragOverlay：浮层固定浅色 */
+.source-mgr-ghost {
+  pointer-events: none;
+  border-radius: 10px;
+  background: rgba(37, 99, 235, 0.08);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  transform: scale(1.02);
+}
+
+.source-mgr-ghost .source-mgr-item {
+  background: rgba(37, 99, 235, 0.06);
+  border-color: rgba(37, 99, 235, 0.22);
 }
 
 .source-mgr-footer-tip {
-  color: var(--text-secondary);
+  color: rgba(51, 65, 85, 0.86);
   font-size: 12px;
 }

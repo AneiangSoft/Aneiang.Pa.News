@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
 import { useLocalStorageSet } from './hooks/useLocalStorageSet';
 import { useLinkBehaviorTip } from './hooks/useLinkBehaviorTip';
@@ -28,40 +28,18 @@ import {
 
 import { getSources, getNews } from './services/api';
 import { getFeatures } from './services/features';
+import { getSourceDisplayName } from './config/newsUiConfig';
 
 import { formatTime, getFullTimeString } from './utils/formatTime';
 import { highlightText } from './utils/highlight';
 import { quickShare } from './utils/share';
+import { NEWS_UI, SOURCES } from './config/newsUiConfig';
 import { generateSnapshot } from './utils/snapshot';
 import { updateSeo } from './utils/seo';
 import { getSiteConfig } from './services/siteConfig';
 import './App.css';
 
-// 英文源名 -> 中文展示名
-const sourceNameMap = {
-  zhihu: '知乎',
-  weibo: '微博',
-  baidu: '百度',
-  douyin: '抖音',
-  toutiao: '头条',
-  bilibili: '哔哩哔哩',
-  hupu: '虎扑',
-  tencent: '腾讯',
-  juejin: '掘金',
-  thepaper: '澎湃',
-  douban: '豆瓣',
-  ifeng: '凤凰网',
-  cnblog: '博客园',
-  csdn: 'CSDN',
-  github: 'GitHub',
-  v2ex: 'V2EX',
-  tieba: '贴吧',
-  _36kr: '36氪',
-  ithome: 'IT之家',
-};
-
-// 忽略大小写获取中文名
-const getChineseSourceName = s => sourceNameMap[s.toLowerCase()] || s;
+const getChineseSourceName = (s) => getSourceDisplayName(s);
 
 function App() {
   const { useBreakpoint } = Grid;
@@ -71,10 +49,10 @@ function App() {
   // 功能开关（Feature Flags）
   const [features, setFeatures] = useState({});
 
-  const isFeatureEnabled = (key) => {
+  const isFeatureEnabled = useCallback((key) => {
     if (!key) return true;
     return !!features?.[key];
-  };
+  }, [features]);
 
   // 页面视图：使用 URL 参数 view 控制，默认 hotnews
   const getViewFromUrl = () => {
@@ -101,7 +79,7 @@ function App() {
 
   const availableViews = useMemo(() => {
     return VIEW_DEFS.filter(v => isFeatureEnabled(v.featureKey));
-  }, [VIEW_DEFS, features]);
+  }, [VIEW_DEFS, isFeatureEnabled]);
 
   const handleViewChange = newView => {
     // 防御：若该 view 未启用，不允许切换
@@ -211,7 +189,7 @@ function App() {
     return () => {
       window.removeEventListener('popstate', onPopState);
     };
-  }, []);
+  }, [setTheme]);
 
   // 51LA 页脚挂件容器
   const laWidgetRef = useRef(null);
@@ -265,7 +243,7 @@ function App() {
     };
 
     init();
-  }, []);
+  }, [VIEW_DEFS, didFetchRef, fetchAllNews]);
 
   // 动态注入 51LA 挂件脚本（React 里直接写 <script> 往往不会执行）
   useEffect(() => {
@@ -298,14 +276,6 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // 切换到“站内阅读”时提示（仅切换触发，刷新不提示）
-  useLinkBehaviorTip({
-    linkBehavior,
-    blockedSources: new Set(['zhihu', 'baidu', 'douyin', 'toutiao', 'cnblog']),
-    getChineseSourceName,
-  });
-
-
   const markAsRead = url => {
     if (!url) return;
     readSetApi.add(url);
@@ -328,11 +298,18 @@ function App() {
   // 移动端：导航下拉菜单
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // 已知不支持 iframe 嵌入的来源：直接降级为“友好提示 + 新开原文”
+  // 已知不支持 iframe 嵌入的来源：从配置读取（capabilities.iframe === false）
   const NO_IFRAME_SOURCES = useMemo(
-    () => new Set(['zhihu', 'baidu', 'douyin', 'toutiao', 'cnblog']),
+    () => new Set(Object.keys(SOURCES || {}).filter(k => SOURCES[k]?.capabilities?.iframe === false)),
     []
   );
+
+  // 切换到“站内阅读”时提示（仅切换触发，刷新不提示）
+  useLinkBehaviorTip({
+    linkBehavior,
+    blockedSources: NO_IFRAME_SOURCES,
+    getChineseSourceName,
+  });
 
   // 站内阅读（抽到 hook）
   const {
@@ -369,8 +346,8 @@ function App() {
 
   const sharePage = async () => {
     const res = await quickShare({
-      title: 'Aneiang 热榜聚合',
-      text: '全网热点实时聚合（知乎/微博/抖音/头条/B站等）',
+      title: NEWS_UI?.share?.pageTitle || 'Aneiang 热榜聚合',
+      text: NEWS_UI?.share?.pageText || '全网热点实时聚合（知乎/微博/抖音/头条/B站等）',
       url: location.href,
     });
 
@@ -450,7 +427,7 @@ function App() {
     return Array.from(set);
   }, [newsBySource, sourceCfg.order]);
 
-  const { hiddenSet, setSourceVisible, moveSource, resetSourceCfg } = useSourceConfig({
+  const { hiddenSet, setSourceVisible, moveSource, setSourceOrder, resetSourceCfg } = useSourceConfig({
     allSources,
     sourceCfg,
     setSourceCfg,
@@ -562,6 +539,7 @@ function App() {
         resetSourceCfg={resetSourceCfg}
         setSourceVisible={setSourceVisible}
         moveSource={moveSource}
+        setSourceOrder={setSourceOrder}
       />
 
       {/* 收藏 Drawer */}
