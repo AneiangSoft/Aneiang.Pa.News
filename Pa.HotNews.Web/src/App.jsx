@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
 import { useLocalStorageSet } from './hooks/useLocalStorageSet';
 import { useLinkBehaviorTip } from './hooks/useLinkBehaviorTip';
@@ -37,6 +37,7 @@ import { NEWS_UI, SOURCES } from './config/newsUiConfig';
 import { generateSnapshot } from './utils/snapshot';
 import { updateSeo } from './utils/seo';
 import { getSiteConfig } from './services/siteConfig';
+import { preloadSourceLogos } from './utils/preloadLogos';
 import './App.css';
 
 const getChineseSourceName = (s) => getSourceDisplayName(s);
@@ -231,7 +232,9 @@ function App() {
             const url = new URL(window.location);
             url.searchParams.delete('view');
             window.history.replaceState({ view: 'hotnews' }, '', url);
-          } catch {}
+          } catch {
+            // ignore
+          }
         }
 
       } catch (error) {
@@ -277,6 +280,26 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
+  // 预加载来源 logo：避免从 llm 切回热榜时批量请求图标导致卡顿
+  useEffect(() => {
+    const run = () => preloadSourceLogos({ theme });
+
+    // 优先在空闲时执行，避免抢占主线程
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(() => run(), { timeout: 1500 });
+      return () => {
+        try {
+          window.cancelIdleCallback(id);
+        } catch {
+          // ignore
+        }
+      };
+    }
+
+    const t = window.setTimeout(run, 600);
+    return () => window.clearTimeout(t);
+  }, [theme]);
+
   const markAsRead = url => {
     if (!url) return;
     readSetApi.add(url);
@@ -290,11 +313,12 @@ function App() {
 
   // 全局搜索（跨来源过滤标题）
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
 
   // SEO：根据搜索词动态更新 title/description/keywords/canonical
   useEffect(() => {
-    updateSeo({ query });
-  }, [query]);
+    updateSeo({ query: deferredQuery });
+  }, [deferredQuery]);
 
   // 移动端：导航下拉菜单
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -331,7 +355,7 @@ function App() {
   } = useReader({
     linkBehavior,
     noIframeSources: NO_IFRAME_SOURCES,
-    query,
+    query: deferredQuery,
     newsBySource,
   });
 
@@ -517,7 +541,7 @@ function App() {
             displaySources,
             newsBySource,
             getChineseSourceName,
-            query,
+            query: deferredQuery,
             readSet,
             linkBehavior,
             openReaderFromItem,
