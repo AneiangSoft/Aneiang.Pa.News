@@ -123,6 +123,215 @@
   animation: newsGridEdgeNudgeRight 2.1s ease-in-out infinite;
 }
 
+/* ========== Group Tabs (Desktop) ========== */
+
+.newsgrid-group-tabs {
+  position: sticky;
+  top: 4.5rem; /* app-header height */
+  z-index: 60;
+
+  margin: 0 0 10px;
+  padding: 12px 10px 10px; /* 上方多留 2px，避免 hover 上浮被裁切 */
+  overflow: visible;
+
+  border-radius: 16px;
+
+  /* 更“高级”的双层玻璃：底层色 + 顶层高光 */
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #ffffff 10%, transparent) 0%,
+      transparent 100%
+    ),
+    color-mix(in srgb, var(--bg-secondary) 76%, transparent);
+
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 16%, transparent);
+
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* 顶部细分隔线：强调层级（更产品化） */
+.newsgrid-group-tabs::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 0;
+  height: 1px;
+  background: color-mix(in srgb, var(--text-secondary) 16%, transparent);
+  opacity: 0.7;
+}
+
+/* 左右渐隐：提示可横向滚动 */
+.newsgrid-group-tabs::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 16px;
+  z-index: 0;
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--bg-secondary) 72%, transparent) 0%,
+      transparent 16%,
+      transparent 84%,
+      color-mix(in srgb, var(--bg-secondary) 72%, transparent) 100%
+    );
+  opacity: 0.22;
+}
+
+
+
+/* Tabs 外观：Pill + 轻动效 */
+.newsgrid-group-tabs .ant-tabs-nav {
+  margin: 0 !important;
+  position: relative;
+  z-index: 1; /* 盖过 ::after */
+}
+
+.newsgrid-group-tabs .ant-tabs-nav::before {
+  border-bottom: none !important;
+}
+
+.newsgrid-group-tabs .ant-tabs-ink-bar {
+  display: none !important;
+}
+
+.newsgrid-group-tabs .ant-tabs-nav-list {
+  gap: 8px;
+}
+
+.newsgrid-group-tabs .ant-tabs-tab {
+  margin: 0 !important;
+  padding: 8px 12px !important;
+  border-radius: 999px;
+
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 14%, transparent);
+
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.newsgrid-group-tabs .ant-tabs-tab:hover {
+  background: color-mix(in srgb, var(--primary) 11%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 42%, transparent);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.10);
+}
+
+.newsgrid-group-tabs .ant-tabs-tab-btn {
+  color: var(--text-secondary) !important;
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* group 色点（更“产品化”的信息 scent） */
+.newsgrid-tab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  opacity: 0.9;
+  flex: 0 0 auto;
+}
+
+.newsgrid-tab-dot.dot-all { background: color-mix(in srgb, var(--primary) 50%, var(--text-secondary)); }
+.newsgrid-tab-dot.dot-hot { background: #ef4444; }
+.newsgrid-tab-dot.dot-community { background: #a78bfa; }
+.newsgrid-tab-dot.dot-tech { background: #22c55e; }
+.newsgrid-tab-dot.dot-biz { background: #f59e0b; }
+.newsgrid-tab-dot.dot-video { background: #fb7185; }
+.newsgrid-tab-dot.dot-other { background: color-mix(in srgb, var(--text-secondary) 70%, var(--primary)); }
+
+.newsgrid-group-tabs .ant-tabs-tab-active {
+  background: color-mix(in srgb, var(--primary) 20%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--primary) 62%, transparent);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+.newsgrid-group-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--text-primary) !important;
+}
+
+.newsgrid-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+
+  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-secondary) 16%, transparent);
+  color: var(--text-secondary);
+}
+
+.newsgrid-group-tabs .ant-tabs-tab-active .newsgrid-tab-count {
+  background: color-mix(in srgb, var(--primary) 22%, var(--bg-secondary));
+  border-color: color-mix(in srgb, var(--primary) 50%, transparent);
+  color: var(--text-primary);
+}
+
+/* 横向滚动（组多时不换行更舒服） */
+.newsgrid-group-tabs .ant-tabs-nav-wrap {
+  overflow: auto hidden;
+}
+
+.newsgrid-group-tabs .ant-tabs-nav-wrap::-webkit-scrollbar {
+  height: 6px;
+}
+
+.newsgrid-group-tabs .ant-tabs-nav-wrap::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-secondary) 22%, transparent);
+  border-radius: 999px;
+}
+
+.newsgrid-group-tabs .ant-tabs-nav-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* light 主题阴影更克制 */
+:root[data-theme="light"] .newsgrid-group-tabs {
+  box-shadow:
+    0 16px 40px rgba(15, 23, 42, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.40);
+}
+
+/* warm 主题更暖的高光 */
+:root[data-theme="warm"] .newsgrid-group-tabs {
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 244, 224, 0.10);
+}
+
+/* 适配移动端：桌面 tabs 不显示（移动端走自己的选择器） */
+@media (max-width: 768px) {
+  .newsgrid-group-tabs {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .newsgrid-swipe-anim.dir-left,
   .newsgrid-swipe-anim.dir-right {
@@ -132,5 +341,11 @@
   .newsgrid-edge-hint.left,
   .newsgrid-edge-hint.right {
     animation: none;
+  }
+
+  .newsgrid-group-tabs .ant-tabs-tab,
+  .newsgrid-group-tabs .ant-tabs-tab:hover {
+    transition: none;
+    transform: none;
   }
 }

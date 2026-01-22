@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Empty, Drawer, Input, Button, Grid } from 'antd';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Empty, Drawer, Input, Button, Grid, Tabs } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import SourceCard from './SourceCard';
 import './NewsGrid.css';
@@ -24,6 +24,43 @@ function NewsGrid({
   retrySource,
   noIframeSources,
 }) {
+  const GROUP_ORDER = useMemo(() => ['全部', '热点', '社区', '技术', '商业', '视频', '其他'], []);
+
+  const SOURCE_GROUP_MAP = useMemo(() => ({
+    // 热点（热榜 + 资讯媒体）
+    weibo: '热点',
+    baidu: '热点',
+    toutiao: '热点',
+    tencent: '热点',
+    thepaper: '热点',
+    ifeng: '热点',
+
+    // 社区
+    zhihu: '社区',
+    v2ex: '社区',
+    tieba: '社区',
+    hupu: '社区',
+    douban: '社区',
+
+    // 技术
+    juejin: '技术',
+    csdn: '技术',
+    cnblog: '技术',
+    github: '技术',
+
+    // 商业
+    _36kr: '商业',
+    ithome: '商业',
+
+    // 视频
+    douyin: '视频',
+    bilibili: '视频',
+  }), []);
+
+  const getGroupOfSource = useCallback((src) => {
+    const key = String(src || '').toLowerCase();
+    return SOURCE_GROUP_MAP[key] || '其他';
+  }, [SOURCE_GROUP_MAP]);
   const { useBreakpoint } = Grid;
   const screens = useBreakpoint();
   const isMobile = (screens.md === false);
@@ -68,6 +105,63 @@ function NewsGrid({
   const visibleCards = cards
     // 搜索时：只展示“有匹配数据”的卡片（避免一堆空卡片）
     .filter(x => (q ? x.status !== 'success' || (x.filtered?.length ?? 0) > 0 : true));
+
+  const groupTabs = useMemo(() => {
+    const byGroup = new Map();
+
+    for (const card of visibleCards) {
+      const group = getGroupOfSource(card.src);
+      if (!byGroup.has(group)) byGroup.set(group, []);
+      byGroup.get(group).push(card);
+    }
+
+    // “全部”组：用于默认展示全部来源（仍然遵循 visibleCards 的过滤逻辑）
+    if (visibleCards.length) {
+      byGroup.set('全部', visibleCards);
+    }
+
+    // 按预设顺序输出（不存在的组不显示）
+    const tabs = [];
+    for (const g of GROUP_ORDER) {
+      const items = byGroup.get(g);
+      if (!items || !items.length) continue;
+      tabs.push({
+        key: g,
+        label: g,
+        cards: items,
+      });
+    }
+
+    // 防御：如果出现未知组名（理论上不会），追加到最后
+    for (const [g, items] of byGroup.entries()) {
+      if (GROUP_ORDER.includes(g)) continue;
+      tabs.push({ key: g, label: g, cards: items });
+    }
+
+    return tabs;
+  }, [visibleCards, GROUP_ORDER, getGroupOfSource]);
+
+  // 桌面端 tabs 当前激活分组
+  const [activeGroup, setActiveGroup] = useState(null);
+
+  useEffect(() => {
+    if (isMobile) return;
+    const next = groupTabs[0]?.key ?? null;
+    if (!next) {
+      if (activeGroup !== null) setActiveGroup(null);
+      return;
+    }
+    if (!activeGroup || !groupTabs.some(t => t.key === activeGroup)) {
+      setActiveGroup(next);
+    }
+  }, [isMobile, groupTabs, activeGroup]);
+
+  const desktopActiveTab = useMemo(() => {
+    if (isMobile) return null;
+    if (!groupTabs.length) return null;
+    const key = activeGroup && groupTabs.some(t => t.key === activeGroup) ? activeGroup : groupTabs[0].key;
+    return groupTabs.find(t => t.key === key) || groupTabs[0];
+  }, [isMobile, groupTabs, activeGroup]);
 
   const fireAnim = (dir) => {
     setAnimDir(dir);
@@ -312,10 +406,28 @@ function NewsGrid({
     );
   }
 
-  // 桌面端：保持现有“多来源卡片纵向/网格”展示
+  // 桌面端：使用 Tabs 按分组切换
+  const tabItems = (groupTabs || []).map(t => ({
+    key: t.key,
+    label: (
+      <>
+        {t.label}
+        <span className="newsgrid-tab-count">{t.cards.length}</span>
+      </>
+    ),
+  }));
+
   return (
     <div className="news-grid">
-      {visibleCards.map(({ src, status, news, updatedTime, errorMsg, filtered, title, iframeSupported }) => (
+      <div style={{ gridColumn: '1 / -1' }} className="newsgrid-group-tabs">
+        <Tabs
+          activeKey={activeGroup || (groupTabs[0]?.key ?? '')}
+          items={tabItems}
+          onChange={(k) => setActiveGroup(k)}
+        />
+      </div>
+
+      {(desktopActiveTab?.cards || []).map(({ src, status, news, updatedTime, errorMsg, filtered, title, iframeSupported }) => (
         <SourceCard
           key={src}
           src={src}
