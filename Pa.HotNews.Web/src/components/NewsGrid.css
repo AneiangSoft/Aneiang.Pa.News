@@ -123,6 +123,50 @@
   animation: newsGridEdgeNudgeRight 2.1s ease-in-out infinite;
 }
 
+/* ========== Mobile Source Picker Drawer ========== */
+
+.source-picker-drawer .ant-drawer-content {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.source-picker-drawer .ant-drawer-header {
+  background: var(--bg-secondary) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.source-picker-drawer .ant-drawer-title {
+  color: var(--text-primary) !important;
+}
+
+.source-picker-drawer .ant-drawer-close {
+  color: var(--text-secondary) !important;
+}
+
+.source-picker-drawer .ant-drawer-body {
+  background: var(--bg-secondary) !important;
+}
+
+/* 搜索框：去掉深色/护眼主题下“底色块” */
+.source-picker-drawer .ant-input-affix-wrapper {
+  background: transparent !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+.source-picker-drawer .ant-input {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+.source-picker-drawer .ant-input::placeholder {
+  color: var(--text-secondary) !important;
+}
+
+.source-picker-drawer .ant-input-clear-icon {
+  color: var(--text-secondary) !important;
+}
+
 /* ========== Group Tabs (Desktop) ========== */
 
 .newsgrid-group-tabs {

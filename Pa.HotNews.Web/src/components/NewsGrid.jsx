@@ -359,15 +359,33 @@ function NewsGrid({
           title="选择来源"
           placement="bottom"
           open={pickerOpen}
-          onClose={() => setPickerOpen(false)}
-          styles={{ body: { paddingTop: 12 } }}
+          onClose={() => {
+            setSourceFilter(''); // 清空搜索文本
+            setPickerOpen(false);
+          }}
+          styles={{ 
+            body: { 
+              paddingTop: 12,
+              background: 'var(--bg-secondary)'
+            },
+            header: {
+              background: 'var(--bg-secondary)',
+              borderBottom: '1px solid var(--border)'
+            }
+          }}
+          className="source-picker-drawer"
         >
           <Input
             allowClear
             value={sourceFilter}
             placeholder="搜索来源..."
             onChange={e => setSourceFilter(e.target.value)}
-            style={{ marginBottom: 12 }}
+            style={{ 
+              marginBottom: 12,
+              background: 'var(--bg-secondary)',
+              borderColor: 'var(--border)',
+              color: 'var(--text-primary)'
+            }}
           />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
