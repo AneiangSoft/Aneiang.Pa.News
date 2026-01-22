@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * useLocalStorageSet
@@ -18,12 +18,45 @@ export function useLocalStorageSet(key, initial = []) {
 
   const set = useMemo(() => new Set(arr), [arr]);
 
-  useEffect(() => {
+  const saveTimerRef = useRef(null);
+  const lastSerializedRef = useRef(null);
+
+  const flush = () => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+
     try {
-      localStorage.setItem(key, JSON.stringify(Array.from(set)));
+      const serialized = JSON.stringify(Array.from(set));
+      if (serialized === lastSerializedRef.current) return;
+      lastSerializedRef.current = serialized;
+      localStorage.setItem(key, serialized);
     } catch {
       // ignore
     }
+  };
+
+  useEffect(() => {
+    // 延迟写入：降低频繁 add/remove 导致的 stringify + setItem 开销
+    // 选择 500ms（你选的 C）
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(flush, 500);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, set]);
+
+  useEffect(() => {
+    const onBeforeUnload = () => flush();
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, set]);
 
   const add = useCallback((value) => {

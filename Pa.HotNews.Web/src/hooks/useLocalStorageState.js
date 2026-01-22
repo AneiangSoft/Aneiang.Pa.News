@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * useLocalStorageState
@@ -18,12 +18,45 @@ export function useLocalStorageState(key, defaultValue) {
     }
   });
 
-  useEffect(() => {
+  const saveTimerRef = useRef(null);
+  const lastSerializedRef = useRef(null);
+
+  const flush = () => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+
     try {
-      localStorage.setItem(key, JSON.stringify(state));
+      const serialized = JSON.stringify(state);
+      if (serialized === lastSerializedRef.current) return;
+      lastSerializedRef.current = serialized;
+      localStorage.setItem(key, serialized);
     } catch {
       // ignore
     }
+  };
+
+  useEffect(() => {
+    // 延迟写入：降低频繁 setState 导致的 stringify + setItem 开销
+    // 选择 500ms（你选的 C）
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(flush, 500);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, state]);
+
+  useEffect(() => {
+    const onBeforeUnload = () => flush();
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, state]);
 
   useEffect(() => {
