@@ -155,52 +155,59 @@ function SourceCard({
               itemHeight={NEWS_UI?.list?.virtualItemHeight || 36}
               itemKey={(item, index) => item?.url || `${src}-${index}`}
             >
-              {(item, idx) => (
-                <div className="ant-list-item">
-                  <span className="news-rank">{idx + 1}</span>
+              {(item, idx) => {
+                const url = item?.url;
+                const isRead = url ? readSet.has(url) : false;
+                const fav = url ? isFavorited(url) : false;
 
-                  <Tooltip
-                    title={item.title}
-                    placement="topLeft"
-                    mouseEnterDelay={0.2}
-                  >
-                    <a
-                      href={item.url}
-                      target={shouldOpenInNewTab ? '_blank' : undefined}
-                      rel={shouldOpenInNewTab ? 'noopener noreferrer' : undefined}
-                      className={readSet.has(item.url) ? 'is-read' : ''}
-                      onClick={e => {
-                        const openInNewTab = e.ctrlKey || e.metaKey;
+                return (
+                  <div className="ant-list-item">
+                    <span className="news-rank">{idx + 1}</span>
 
-                        if (shouldOpenInNewTab || openInNewTab) {
+                    <Tooltip
+                      title={item.title}
+                      placement="topLeft"
+                      mouseEnterDelay={0.2}
+                    >
+                      <a
+                        href={url}
+                        target={shouldOpenInNewTab ? '_blank' : undefined}
+                        rel={shouldOpenInNewTab ? 'noopener noreferrer' : undefined}
+                        className={isRead ? 'is-read' : ''}
+                        onClick={e => {
+                          const openInNewTab = e.ctrlKey || e.metaKey;
+
+                          if (shouldOpenInNewTab || openInNewTab) {
+                            e.preventDefault();
+                            if (url) window.open(url, '_blank', 'noopener,noreferrer');
+                            return;
+                          }
+
+                          if (!url) return;
                           e.preventDefault();
-                          window.open(item.url, '_blank', 'noopener,noreferrer');
-                          return;
-                        }
+                          markAsRead(url);
+                          onOpenItem({ url, title: item.title, source: src });
+                        }}
+                      >
+                        {highlightText(item.title, q)}
+                      </a>
+                    </Tooltip>
 
+                    <button
+                      type="button"
+                      className={fav ? 'fav-btn is-fav' : 'fav-btn'}
+                      title={fav ? '取消收藏' : '收藏'}
+                      onClick={e => {
                         e.preventDefault();
-                        markAsRead(item.url);
-                        onOpenItem({ url: item.url, title: item.title, source: src });
+                        e.stopPropagation();
+                        toggleFavorite(item, src);
                       }}
                     >
-                      {highlightText(item.title, q)}
-                    </a>
-                  </Tooltip>
-
-                  <button
-                    type="button"
-                    className={isFavorited(item.url) ? 'fav-btn is-fav' : 'fav-btn'}
-                    title={isFavorited(item.url) ? '取消收藏' : '收藏'}
-                    onClick={e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      toggleFavorite(item, src);
-                    }}
-                  >
-                    {isFavorited(item.url) ? <StarFilled /> : <StarOutlined />}
-                  </button>
-                </div>
-              )}
+                      {fav ? <StarFilled /> : <StarOutlined />}
+                    </button>
+                  </div>
+                );
+              }}
             </VirtualList>
           </div>
         ) : (

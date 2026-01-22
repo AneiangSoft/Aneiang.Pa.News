@@ -59,11 +59,24 @@ export function useLocalStorageSet(key, initial = []) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, set]);
 
+  const MAX_SIZE = 5000;
+
   const add = useCallback((value) => {
     if (!value) return;
     setArr(prev => {
-      if (prev.includes(value)) return prev;
-      return [...prev, value];
+      // 用 Set 判断，避免已读条目变多后 prev.includes O(n) 带来卡顿
+      const prevSet = new Set(prev);
+      if (prevSet.has(value)) return prev;
+
+      // 追加到末尾：保持“先读先存”的顺序（便于上限淘汰策略：丢最旧的）
+      let next = [...prev, value];
+
+      // 上限：最多保留最近 MAX_SIZE 条
+      if (next.length > MAX_SIZE) {
+        next = next.slice(next.length - MAX_SIZE);
+      }
+
+      return next;
     });
   }, []);
 

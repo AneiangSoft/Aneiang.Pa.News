@@ -1,7 +1,9 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Empty, Drawer, Input, Button, Grid, Tabs } from 'antd';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Empty, Drawer, Input, Button, Grid } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import SourceCard from './SourceCard';
+import DesktopGroupTabs from './DesktopGroupTabs';
+import DesktopSourceCards from './DesktopSourceCards';
 import { GROUPS, NEWS_UI, buildGroupIndex } from '../config/newsUiConfig';
 import './NewsGrid.css';
 
@@ -426,74 +428,34 @@ function NewsGrid({
   const countMode = NEWS_UI?.tabs?.countMode || 'sourceCount';
   const showDot = NEWS_UI?.tabs?.showDot !== false;
 
-  const tabItems = (groupTabs || []).map(t => {
-    const groupDef = GROUPS.find(g => g.label === t.label);
-    const dotColor = groupDef?.dotColor;
-
-    const count = (() => {
-      if (countMode === 'hidden') return null;
-      if (countMode === 'newsCount') {
-        return (t.cards || []).reduce((sum, c) => sum + ((q ? (c.filtered?.length ?? 0) : (c.news?.length ?? 0))), 0);
-      }
-      // sourceCount
-      return (t.cards || []).length;
-    })();
-
-    return {
-      key: t.key,
-      label: (
-        <>
-          {showDot ? (
-            <span
-              className="newsgrid-tab-dot"
-              style={dotColor ? { background: dotColor } : undefined}
-              aria-hidden="true"
-            />
-          ) : null}
-          {t.label}
-          {count !== null ? <span className="newsgrid-tab-count">{count}</span> : null}
-        </>
-      ),
-    };
-  });
-
   return (
     <div className="news-grid">
-      <div style={{ gridColumn: '1 / -1' }} className="newsgrid-group-tabs">
-        <Tabs
-          activeKey={activeGroup || (groupTabs[0]?.key ?? '')}
-          items={tabItems}
-          onChange={(k) => startTransition(() => setActiveGroup(k))}
-        />
-      </div>
+      <DesktopGroupTabs
+        groupTabs={groupTabs}
+        activeGroup={activeGroup}
+        setActiveGroup={setActiveGroup}
+        q={q}
+        countMode={countMode}
+        showDot={showDot}
+      />
 
-      {(desktopActiveTab?.cards || []).map(({ src, status, news, updatedTime, errorMsg, filtered, title, iframeSupported }) => (
-        <SourceCard
-          key={src}
-          src={src}
-          title={title}
-          status={status}
-          news={news}
-          filtered={filtered}
-          updatedTime={updatedTime}
-          errorMsg={errorMsg}
-          q={q}
-          iframeSupported={iframeSupported}
-          readSet={readSet}
-          linkBehavior={linkBehavior}
-          onOpenItem={openReaderFromItem}
-          markAsRead={markAsRead}
-          isFavorited={isFavorited}
-          toggleFavorite={toggleFavorite}
-          copySnapshot={copySnapshot}
-          generatePoster={generatePoster}
-          isGeneratingPoster={isGeneratingPoster}
-          getFullTimeString={getFullTimeString}
-          formatTime={formatTime}
-          highlightText={highlightTitle}
-          retrySource={retrySource}
-        />
-      ))}
+      <DesktopSourceCards
+        cards={desktopActiveTab?.cards || []}
+        q={q}
+        readSet={readSet}
+        linkBehavior={linkBehavior}
+        openReaderFromItem={openReaderFromItem}
+        markAsRead={markAsRead}
+        isFavorited={isFavorited}
+        toggleFavorite={toggleFavorite}
+        copySnapshot={copySnapshot}
+        generatePoster={generatePoster}
+        isGeneratingPoster={isGeneratingPoster}
+        getFullTimeString={getFullTimeString}
+        formatTime={formatTime}
+        highlightText={highlightTitle}
+        retrySource={retrySource}
+      />
     </div>
   );
 }
