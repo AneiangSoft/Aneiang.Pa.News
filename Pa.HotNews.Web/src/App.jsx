@@ -194,56 +194,57 @@ function App() {
   // 51LA 页脚挂件容器
   const laWidgetRef = useRef(null);
 
-  // 首次加载：先获取 features，再决定 view 是否允许，并加载热榜
+  // 首次加载：获取配置、校验视图、加载新闻
   useEffect(() => {
     const init = async () => {
-      // 站点配置（不阻塞主流程；失败时降级为默认）
-      try {
-        const cfg = await getSiteConfig();
-        setSiteCfg(cfg || {});
+      // 使用 didFetchRef 防止 React 18 StrictMode 下的二次执行
+      if (didFetchRef.current) return;
+      didFetchRef.current = true;
 
-        // 动态浏览器标题：Title + 可选后缀（默认后缀：" - 全网热点实时聚合"）
+      try {
+        // 并行获取站点配置和功能开关
+        const [cfg, f] = await Promise.all([
+          getSiteConfig(),
+          getFeatures(),
+        ]);
+
+        setSiteCfg(cfg || {});
+        setFeatures(f || {});
+
+        // 动态设置浏览器标题
         if (cfg?.title && String(cfg.title).trim()) {
           const base = String(cfg.title).trim();
           const suffix = (cfg?.titleSuffix && String(cfg.titleSuffix)) || ' - 全网热点实时聚合';
           document.title = `${base}${suffix}`;
         }
-      } catch {
-        // ignore
-      }
 
-      const f = await getFeatures();
-      setFeatures(f || {});
+        // 校验当前视图是否可用
+        const v = getViewFromUrl();
+        const def = VIEW_DEFS.find(x => x.key === v);
+        const isViewAvailable = def ? (def.featureKey ? !!(f && f[def.featureKey]) : true) : false;
 
-      // view 校验：若当前 view 不可用，则回退 hotnews，并清理 URL
-      const v = getViewFromUrl();
-      const def = VIEW_DEFS.find(x => x.key === v);
-      const ok = def ? (def.featureKey ? !!(f && f[def.featureKey]) : true) : false;
-
-      if (!ok) {
-        setView('hotnews');
-      } else {
-        // 若可用，允许通过 URL 直达
-        setView(v);
-      }
-
-      if (!ok) {
-        try {
-          const url = new URL(window.location);
-          url.searchParams.delete('view');
-          window.history.replaceState({ view: 'hotnews' }, '', url);
-        } catch {
-          // ignore
+        if (isViewAvailable) {
+          setView(v);
+        } else {
+          setView('hotnews');
+          try {
+            const url = new URL(window.location);
+            url.searchParams.delete('view');
+            window.history.replaceState({ view: 'hotnews' }, '', url);
+          } catch {}
         }
+
+      } catch (error) {
+        console.error('Failed to fetch initial config:', error);
       }
 
-      if (didFetchRef.current) return;
-      didFetchRef.current = true;
+      // 最后加载新闻数据
       fetchAllNews();
     };
 
     init();
-  }, [VIEW_DEFS, didFetchRef, fetchAllNews]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 动态注入 51LA 挂件脚本（React 里直接写 <script> 往往不会执行）
   useEffect(() => {
@@ -418,6 +419,14 @@ function App() {
     favoriteSources,
     filteredFavoriteList,
   } = useFavorites({ favoriteMap, setFavoriteMap });
+
+  // 收藏抽屉关闭时，清空搜索条件
+  useEffect(() => {
+    if (!favOpen) {
+      setFavQuery('');
+      setFavSource('all');
+    }
+  }, [favOpen, setFavQuery, setFavSource]);
 
   // 来源管理：计算当前所有来源（来自数据与 order 合并）
   const allSources = useMemo(() => {

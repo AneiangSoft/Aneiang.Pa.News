@@ -457,7 +457,7 @@ body {
 /* 收藏抽屉顶部工具区 */
 .fav-tools .ant-input,
 .fav-tools .ant-select-selector {
-  background: color-mix(in srgb, var(--bg-secondary) 70%, transparent) !important;
+  background: transparent !important;
   border-color: color-mix(in srgb, var(--text-secondary) 22%, transparent) !important;
   color: var(--text-primary) !important;
 }
