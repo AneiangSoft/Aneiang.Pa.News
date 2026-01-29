@@ -4,6 +4,10 @@ import 'antd/dist/reset.css';
 import './index.css';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx'
+import { loadRuntimeConfig } from './config/runtimeConfig';
+
+(async () => {
+  await loadRuntimeConfig();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -11,4 +15,5 @@ createRoot(document.getElementById('root')).render(
       <App />
     </BrowserRouter>
   </StrictMode>,
-)
+  );
+})();

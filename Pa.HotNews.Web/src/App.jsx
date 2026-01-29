@@ -28,12 +28,11 @@ import {
 
 import { getSources, getNews } from './services/api';
 import { getFeatures } from './services/features';
-import { getSourceDisplayName } from './config/newsUiConfig';
 
 import { formatTime, getFullTimeString } from './utils/formatTime';
 import { highlightText } from './utils/highlight';
 import { quickShare } from './utils/share';
-import { NEWS_UI, SOURCES } from './config/newsUiConfig';
+import { getNewsUiConfig, getSourceDisplayName } from './config/newsUiConfig';
 import { generateSnapshot } from './utils/snapshot';
 import { updateSeo } from './utils/seo';
 import { getSiteConfig } from './services/siteConfig';
@@ -100,6 +99,17 @@ function App() {
     window.history.pushState({ view: newView }, '', url);
   };
 
+
+  const { NEWS_UI, SOURCES } = getNewsUiConfig();
+
+  const allowedSourcesList = useMemo(() => {
+    const allowed = NEWS_UI?.sourceManager?.allowedSources;
+    if (Array.isArray(allowed) && allowed.length > 0) {
+      return new Set(allowed.map((s) => String(s).toLowerCase()));
+    }
+    return null;
+  }, [NEWS_UI]);
+
   // 热榜数据加载（抽到 hook）
   const {
     newsBySource,
@@ -110,6 +120,7 @@ function App() {
   } = useNews({
     getSources,
     getNews,
+    sourceWhitelist: allowedSourcesList ? Array.from(allowedSourcesList) : null,
     onSyncSources: (normalized) => {
       // 同步来源配置（新增源自动加入；消失的源从配置中移除）
       setSourceCfg(prev => {
@@ -452,13 +463,18 @@ function App() {
     }
   }, [favOpen, setFavQuery, setFavSource]);
 
-  // 来源管理：计算当前所有来源（来自数据与 order 合并）
   const allSources = useMemo(() => {
-    const set = new Set();
-    Object.keys(newsBySource).forEach(s => set.add(s.toLowerCase()));
-    (sourceCfg.order || []).forEach(s => set.add(String(s).toLowerCase()));
-    return Array.from(set);
-  }, [newsBySource, sourceCfg.order]);
+    const fromBackend = Object.keys(newsBySource).map((s) => s.toLowerCase());
+    const fromConfig = (sourceCfg.order || []).map((s) => String(s).toLowerCase());
+
+    let combined = [...new Set([...fromBackend, ...fromConfig])];
+
+    if (allowedSourcesList) {
+      combined = combined.filter((s) => allowedSourcesList.has(s));
+    }
+
+    return combined;
+  }, [newsBySource, sourceCfg.order, allowedSourcesList]);
 
   const { hiddenSet, setSourceVisible, moveSource, setSourceOrder, resetSourceCfg } = useSourceConfig({
     allSources,
@@ -475,15 +491,24 @@ function App() {
       if (!base.includes(s)) base.push(s);
     }
 
-    let list = base.filter(s => !hiddenSet.has(s));
+    let list = base;
 
+    // 强制白名单：只要配置了 allowedSources，就必须严格限制可见来源
+    if (allowedSourcesList) {
+      list = list.filter(s => allowedSourcesList.has(String(s).toLowerCase()));
+    }
+
+    // 隐藏过滤
+    list = list.filter(s => !hiddenSet.has(s));
+
+    // URL 参数白名单（仅在 allowedSources 之后再次收窄）
     if (Array.isArray(sourceWhitelist) && sourceWhitelist.length) {
       const w = new Set(sourceWhitelist.map(x => String(x).toLowerCase()));
       list = list.filter(s => w.has(String(s).toLowerCase()));
     }
 
     return list;
-  }, [allSources, hiddenSet, sourceCfg.order, sourceWhitelist]);
+  }, [allSources, hiddenSet, sourceCfg.order, sourceWhitelist, allowedSourcesList]);
 
   const buildShareUrl = () => {
     const origin = getSiteOrigin();

@@ -1,0 +1,85 @@
+{
+  "NEWS_UI": {
+    "sourceManager": {
+      "defaultOrder": ["weibo", "zhihu", "bilibili", "douyin", "toutiao"],
+      "defaultHidden": ["tieba", "hupu"]
+    },
+    "tabs": {
+      "defaultGroupKey": "hot",
+      "countMode": "sourceCount",
+      "showDot": true
+    },
+    "i18n": {
+      "iframeBlockedTag": "站内受限",
+      "iframeBlockedTip": "该来源可能无法站内阅读，点击将直接在新标签页打开（也可 Ctrl/⌘ + 点击标题）"
+    },
+    "share": {
+      "pageTitle": "Aneiang 热榜聚合",
+      "pageText": "全网热点实时聚合（知乎/微博/抖音/头条/B站等）"
+    },
+    "list": {
+      "virtualHeight": 420,
+      "virtualItemHeight": 48
+    }
+  },
+  "GROUPS": [
+    {
+      "key": "all",
+      "label": "全部",
+      "dotColor": null,
+      "sources": []
+    },
+    {
+      "key": "hot",
+      "label": "热点",
+      "dotColor": "#ef4444",
+      "sources": ["weibo", "baidu", "toutiao", "tencent", "thepaper", "ifeng"]
+    },
+    {
+      "key": "community",
+      "label": "社区",
+      "dotColor": "#a78bfa",
+      "sources": ["zhihu", "v2ex", "tieba", "hupu", "douban"]
+    },
+    {
+      "key": "tech",
+      "label": "技术",
+      "dotColor": "#22c55e",
+      "sources": ["juejin", "csdn", "cnblog", "github"]
+    },
+    {
+      "key": "biz",
+      "label": "商业",
+      "dotColor": "#f59e0b",
+      "sources": ["_36kr", "ithome"]
+    },
+    {
+      "key": "video",
+      "label": "视频",
+      "dotColor": "#fb7185",
+      "sources": ["douyin", "bilibili"]
+    },
+    {
+      "key": "other",
+      "label": "其他",
+      "dotColor": null,
+      "sources": null
+    }
+  ],
+  "SOURCES": {
+    "github": {
+      "name": "GitHub",
+      "logo": null,
+      "header": {
+        "background": "linear-gradient(90deg, rgba(36, 41, 46, 0.62), rgba(47, 54, 61, 0.30))"
+      }
+    },
+    "v2ex": {
+      "name": "V2EX",
+      "logo": null,
+      "header": {
+        "background": "linear-gradient(90deg, rgba(30, 136, 229, 0.48), rgba(66, 165, 245, 0.26))"
+      }
+    }
+  }
+}

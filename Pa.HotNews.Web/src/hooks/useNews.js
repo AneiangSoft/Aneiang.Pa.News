@@ -6,7 +6,7 @@ import { useCallback, useRef, useState } from 'react';
  * - 提供 fetchAllNews / retrySource
  * - 通过 onSyncSources 回调把“来源列表变化”同步给外部（例如 sourceCfg）
  */
-export function useNews({ getSources, getNews, onSyncSources, onGlobalError }) {
+export function useNews({ getSources, getNews, onSyncSources, onGlobalError, sourceWhitelist }) {
   const [newsBySource, setNewsBySource] = useState({});
   const [isFirstLoading, setIsFirstLoading] = useState(true);
 
@@ -19,7 +19,12 @@ export function useNews({ getSources, getNews, onSyncSources, onGlobalError }) {
 
     try {
       const sources = await getSources();
-      const normalized = (sources || []).map(s => String(s).toLowerCase()).filter(Boolean);
+      let normalized = (sources || []).map(s => String(s).toLowerCase()).filter(Boolean);
+
+      if (Array.isArray(sourceWhitelist) && sourceWhitelist.length) {
+        const w = new Set(sourceWhitelist.map(s => String(s).toLowerCase()));
+        normalized = normalized.filter(s => w.has(s));
+      }
 
       // 同步来源配置（新增源自动加入；消失的源从配置中移除）
       if (onSyncSources) {
@@ -66,7 +71,7 @@ export function useNews({ getSources, getNews, onSyncSources, onGlobalError }) {
       setIsFirstLoading(false);
       if (onGlobalError) onGlobalError(e);
     }
-  }, [getSources, getNews, onSyncSources, onGlobalError]);
+  }, [getSources, getNews, onSyncSources, onGlobalError, sourceWhitelist]);
 
   const retrySource = useCallback(
     async (src) => {

@@ -16,7 +16,11 @@ RUN npm run build
 # =========================
 # Stage 2: Build API (.NET)
 # =========================
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS api-build
+# 国内镜像
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/mcr.microsoft.com/dotnet/sdk:8.0 AS api-build
+
+# FROM mcr.microsoft.com/dotnet/sdk:8.0 AS api-build
+
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
@@ -41,7 +45,10 @@ RUN dotnet publish Pa.HotNews.Api.csproj -c ${BUILD_CONFIGURATION} -o /app/publi
 # =========================
 # Stage 3: Runtime
 # =========================
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+# 国内镜像
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+
+# FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 
 # Set container timezone to Beijing time
 ENV TZ=Asia/Shanghai
