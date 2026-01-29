@@ -38,7 +38,9 @@ Aneiang.Pa.News 是一个现代化的热点/热搜聚合平台，提供“多源
 - [截图](#-截图)
 - [技术栈](#-技术栈)
 - [快速开始](#-快速开始)
-- [配置说明](#-配置说明)
+- [可选：前端运行时配置（config.json）](#-可选前端运行时配置configjson)
+- [配置说明（后端）](#-配置说明后端)
+- [本地测试（开发/部署验证）](#-本地测试开发部署验证)
 - [常见问题（FAQ）](#-常见问题faq)
 - [项目结构](#-项目结构)
 - [贡献指南](#-贡献指南)
@@ -136,6 +138,8 @@ services:
 
     volumes:
       - ./logs:/app/logs
+      # 可选：前端运行时配置（见下文）
+      # - ./config.json:/app/wwwroot/config.json:ro
     restart: unless-stopped
 ```
 
@@ -170,6 +174,8 @@ services:
 
     volumes:
       - ./logs:/app/logs
+      # 可选：前端运行时配置（见下文）
+      # - ./config.json:/app/wwwroot/config.json:ro
     restart: unless-stopped
 ```
 
@@ -226,30 +232,83 @@ npm run dev
 ```
 前端开发服务器将运行在 `http://localhost:5173`。它已通过 `vite.config.js` 配置了代理，所有 `/api` 请求都会被转发到 `http://localhost:8080`，实现前后端联调。
 
-## 📦 项目结构
+## 🧩 可选：前端运行时配置（config.json）
 
-```
-Aneiang.Pa.News/
-├── docments/           # 文档和截图
-├── Pa.HotNews.Api/     # .NET Web API 后端项目
-│   ├── Controllers/    # API 控制器
-│   ├── Services/       # 业务逻辑
-│   └── Program.cs      # 应用入口
-├── Pa.HotNews.Web/     # React 前端项目
-│   ├── public/         # 静态资源
-│   ├── src/
-│   │   ├── components/ # React 组件
-│   │   ├── hooks/      # 自定义 Hooks
-│   │   ├── services/   # API 请求服务
-│   │   ├── utils/      # 工具函数
-│   │   ├── App.jsx     # 应用根组件
-│   │   └── main.jsx    # 应用入口
-│   ├── vite.config.js  # Vite 配置文件（含代理）
-│   └── package.json
-└── docker-compose.yml  # Docker Compose 配置文件
+前端支持通过**挂载静态配置文件**的方式，在 Docker 部署时动态控制 UI 配置（例如：默认展示哪些来源、是否强制白名单等）。
+
+- 配置文件 URL：`/config.json`
+- 容器内挂载路径（本项目镜像）：`/app/wwwroot/config.json`
+- 示例文件：`Pa.HotNews.Web/public/config.example.json`
+
+> 版本提示：该能力需要使用包含此功能的镜像/代码版本；如果你使用较旧镜像，挂载后可能不会生效。
+
+### 1) 最小可用示例（强制白名单）
+
+```json
+{ "NEWS_UI": { "sourceManager": { "allowedSources": ["zhihu", "weibo"] } } }
 ```
 
-## 🔧 配置说明
+### 2) 仅覆盖默认展示（不强制）
+
+> 适合：给默认顺序/默认隐藏一个初始值，用户仍可在“来源管理”中恢复显示。
+
+```json
+{
+  "NEWS_UI": {
+    "sourceManager": {
+      "defaultOrder": ["weibo", "zhihu", "bilibili"],
+      "defaultHidden": ["tieba"]
+    }
+  }
+}
+```
+
+### 3) 强制白名单（只显示指定来源，同时减少后端请求范围）
+
+> 适合：多租户/给客户交付时，要求永远只展示特定来源。
+
+```json
+{
+  "NEWS_UI": {
+    "sourceManager": {
+      "allowedSources": ["zhihu", "weibo"]
+    }
+  }
+}
+```
+
+启用后效果：
+
+- UI **只显示** `allowedSources` 中的来源
+- 前端请求也会收敛：仅请求白名单来源的数据
+
+### 4) Docker 挂载示例
+
+```bash
+docker run -d --name aneiang-pa-news \
+  -p 5000:8080 \
+  -v ./config.json:/app/wwwroot/config.json:ro \
+  caco/aneiang-pa-news:1.0.7
+```
+
+验证是否生效：访问 `http://localhost:5000/config.json`，应能看到你挂载的内容。
+
+## 🧪 本地测试（开发/部署验证）
+
+### 1) Docker 部署验证（推荐）
+
+- 准备 `config.json` 并挂载到 `/app/wwwroot/config.json`
+- 打开浏览器访问 `/config.json` 确认返回内容
+- 打开 DevTools -> Network，确认 `GET /config.json` 为 200
+- 若启用了 `allowedSources`，Network 中只应出现白名单来源的新闻请求（例如 `/api/scraper/news/zhihu`、`/api/scraper/news/weibo`）
+
+### 2) Vite 开发验证（最快）
+
+- 将配置文件放到 `Pa.HotNews.Web/public/config.json`
+- 启动前端：`npm run dev`
+- 访问 `http://localhost:5173/config.json` 确认文件可访问
+
+## 🔧 配置说明（后端）
 
 ### 后端环境变量 (Docker)
 
@@ -285,7 +344,42 @@ Aneiang.Pa.News/
 
 该功能由后端 `/api/features` 控制是否启用。不同部署环境可能有不同默认策略。
 
-- 若你希望默认关闭/开启，建议在部署时通过配置或环境变量（如项目提供）进行控制
+### 4) 为什么挂载了 config.json 但还是显示全部来源？
+
+#### A) 访问不到或不是你挂载的内容
+
+- 直接访问 `http://<host>/config.json`，确认返回内容
+- 确认挂载路径是否正确：`/app/wwwroot/config.json`
+
+#### B) config.json 能访问但仍未生效
+
+- 确认字段路径：`NEWS_UI.sourceManager.allowedSources`
+- 打开 DevTools -> Network，确认 `GET /config.json` 为 200
+- 确认你使用的是包含该能力的镜像版本（旧镜像不支持）
+
+## 📦 项目结构
+
+```
+Aneiang.Pa.News/
+├── docments/           # 文档和截图
+├── Pa.HotNews.Api/     # .NET Web API 后端项目
+│   ├── Controllers/    # API 控制器
+│   ├── Services/       # 业务逻辑
+│   └── Program.cs      # 应用入口
+├── Pa.HotNews.Web/     # React 前端项目
+│   ├── public/         # 静态资源
+│   │   ├── config.example.json # 前端运行时配置示例（用于生成 /config.json）
+│   ├── src/
+│   │   ├── components/ # React 组件
+│   │   ├── hooks/      # 自定义 Hooks
+│   │   ├── services/   # API 请求服务
+│   │   ├── utils/      # 工具函数
+│   │   ├── App.jsx     # 应用根组件
+│   │   └── main.jsx    # 应用入口
+│   ├── vite.config.js  # Vite 配置文件（含代理）
+│   └── package.json
+└── docker-compose.yml  # Docker Compose 配置文件
+```
 
 ## 🤝 贡献指南
 

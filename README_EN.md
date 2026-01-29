@@ -37,7 +37,9 @@ Aneiang.Pa.News is a modern hot news / trending topics aggregation platform. It 
 - [Screenshots](#-screenshots)
 - [Tech Stack](#-tech-stack)
 - [Quick Start](#-quick-start)
-- [Configuration](#-configuration)
+- [Optional: Frontend Runtime Config (config.json)](#-optional-frontend-runtime-configconfigjson)
+- [Backend Configuration](#-backend-configuration)
+- [Local Testing (Dev/Deploy Verification)](#-local-testing-devdeploy-verification)
 - [FAQ](#-faq)
 - [Project Structure](#-project-structure)
 - [Contributing](#-contributing)
@@ -137,6 +139,8 @@ services:
 
     volumes:
       - ./logs:/app/logs
+      # Optional: frontend runtime config (see below)
+      # - ./config.json:/app/wwwroot/config.json:ro
     restart: unless-stopped
 ```
 
@@ -171,6 +175,8 @@ services:
 
     volumes:
       - ./logs:/app/logs
+      # Optional: frontend runtime config (see below)
+      # - ./config.json:/app/wwwroot/config.json:ro
     restart: unless-stopped
 ```
 
@@ -220,7 +226,83 @@ Frontend runs on `http://localhost:5173`.
 
 Vite is configured to proxy `/api` requests to the backend (usually `http://localhost:8080`). See `Pa.HotNews.Web/vite.config.js`.
 
-## 🔧 Configuration
+## 🧩 Optional: Frontend Runtime Config (config.json)
+
+The frontend supports overriding UI behavior at deploy time via a **mounted static config file**, which is useful for Docker/Kubernetes deployments.
+
+- Config file URL: `/config.json`
+- Mount path inside container (this project image): `/app/wwwroot/config.json`
+- Example file in repo: `Pa.HotNews.Web/public/config.example.json`
+
+> Version note: this feature requires an image/source version that includes it. If you use an older image tag, the mounted config may not take effect.
+
+### 1) Minimal working example (enforced allow-list)
+
+```json
+{ "NEWS_UI": { "sourceManager": { "allowedSources": ["zhihu", "weibo"] } } }
+```
+
+### 2) Override default display (non-enforced)
+
+> Good for setting initial order/hidden sources. Users can still re-enable sources in "Source Manager".
+
+```json
+{
+  "NEWS_UI": {
+    "sourceManager": {
+      "defaultOrder": ["weibo", "zhihu", "bilibili"],
+      "defaultHidden": ["tieba"]
+    }
+  }
+}
+```
+
+### 3) Enforced allow-list (UI + fewer backend requests)
+
+> Good for multi-tenant deployments or customer-facing instances.
+
+```json
+{
+  "NEWS_UI": {
+    "sourceManager": {
+      "allowedSources": ["zhihu", "weibo"]
+    }
+  }
+}
+```
+
+Effect:
+
+- UI shows **only** sources in `allowedSources`
+- Frontend requests are also narrowed down to those sources
+
+### 4) Docker mount example
+
+```bash
+docker run -d --name aneiang-pa-news \
+  -p 5000:8080 \
+  -v ./config.json:/app/wwwroot/config.json:ro \
+  caco/aneiang-pa-news:1.0.7
+```
+
+To verify: open `http://localhost:5000/config.json` and check the response.
+
+## 🧪 Local Testing (Dev/Deploy Verification)
+
+### 1) Docker verification (recommended)
+
+- Mount `config.json` to `/app/wwwroot/config.json`
+- Open `/config.json` in your browser to verify the response
+- Open DevTools -> Network and make sure `GET /config.json` is 200
+- If `allowedSources` is enabled, you should only see requests for allow-listed sources (e.g. `/api/scraper/news/zhihu`, `/api/scraper/news/weibo`)
+
+### 2) Vite dev verification (fastest)
+
+- Put your config file at `Pa.HotNews.Web/public/config.json`
+- Start frontend: `npm run dev`
+- Open `http://localhost:5173/config.json` to verify it is served
+
+## 🔧 Backend Configuration
 
 ### Backend environment variables (Docker)
 
@@ -255,6 +337,19 @@ No. Two cache modes are supported:
 ### 3) How do I enable/disable the LLM leaderboard?
 
 This feature is controlled by the backend feature toggle.
+
+### 4) Mounted config.json does not take effect
+
+#### A) Cannot access /config.json or response is not what you mounted
+
+- Open `http://<host>/config.json` in your browser and verify the content
+- Verify the mount path: `/app/wwwroot/config.json`
+
+#### B) /config.json is accessible but still not effective
+
+- Ensure the key path: `NEWS_UI.sourceManager.allowedSources`
+- Check DevTools -> Network: `GET /config.json` should be 200
+- Ensure you are using an image version that includes this feature
 
 ## 📦 Project Structure
 
