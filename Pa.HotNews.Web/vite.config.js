@@ -1,9 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+const appVersion = process.env.npm_package_version;
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    'import.meta.env.APP_VERSION': JSON.stringify(appVersion),
+  },
   plugins: [react()],
   server: {
     port: 5173,

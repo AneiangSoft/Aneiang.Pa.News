@@ -676,13 +676,28 @@ body {
   max-width: 1440px;
   margin: 0 auto;
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.footer-row {
+  display: flex;
   gap: 10px;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
+}
 
-  font-size: 12px;
-  color: var(--text-secondary);
+.footer-row-51la {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .footer-inner a {

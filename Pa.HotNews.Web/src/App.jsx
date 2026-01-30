@@ -42,6 +42,8 @@ import './App.css';
 const getChineseSourceName = (s) => getSourceDisplayName(s);
 
 function App() {
+  const APP_VERSION = import.meta.env.APP_VERSION || '';
+
   const { useBreakpoint } = Grid;
   const screens = useBreakpoint();
   const isMobile = !screens.xl;
@@ -624,22 +626,29 @@ function App() {
       {/* Footer */}
       <footer className="app-footer">
         <div className="footer-inner">
-          {siteCfg?.icpLicense ? <span>备案号：{siteCfg.icpLicense}</span> : null}
+          <div className="footer-row">
+            {siteCfg?.icpLicense ? <span>备案号：{siteCfg.icpLicense}</span> : null}
 
-          {siteCfg?.icpLicense ? <span className="footer-sep">·</span> : null}
+            {siteCfg?.icpLicense ? <span className="footer-sep">·</span> : null}
 
-          <span>版权：AneiangSoft © {new Date().getFullYear()}</span>
+            <span>版权：AneiangSoft © {new Date().getFullYear()}</span>
 
-          <span className="footer-sep">·</span>
+            {APP_VERSION && (
+              <>
+                <span className="footer-sep">·</span>
+                <span className="app-version">v{APP_VERSION}</span>
+              </>
+            )}
 
-          <a href="https://github.com/AneiangSoft/Aneiang.Pa" target="_blank" rel="noopener noreferrer">
-            GitHub
-          </a>
+            <span className="footer-sep">·</span>
 
-          <span className="footer-sep">·</span>
+            <a href="https://github.com/AneiangSoft/Aneiang.Pa" target="_blank" rel="noopener noreferrer">
+              GitHub
+            </a>
+          </div>
 
           {/* 51LA 访问统计展示（挂件） */}
-          <span className="footer-51la" ref={laWidgetRef} />
+          <div className="footer-row footer-row-51la" ref={laWidgetRef} />
         </div>
       </footer>
 
